@@ -7,37 +7,76 @@ using namespace std;
 #define swap(x0, x) {float *tmp = x0; x0 = x; x = tmp;}
 
 // Function initializations
+void setSource(int, float *, float *);
 void addSource(int, float *, float *, float);
+void setBoundary(int, int, float *);
 void diffuse(int, int, float *, float *, float, float);
 void advect(int, int, float *, float *, float *, float *, float);
 void densityStep(int, float *, float *, float *, float *, float, float);
-void setBoundary(int, int, float *);
-void displayGrid(int, float *);
+void hodgeProjection(int, float *, float *, float *, float *);
+void velocityStep(int, float *, float *, float *, float *, float, float);
+void displayGrid(int, float *, float);
 
 int main()
 {
-    // Constant declarations
-    int N = 10;
+    // Declarations
+    int N = 25;
     int size = (N + 2) * (N + 2);
+    int numIterations = 10;
+    float visc = 10;
+    float diff = 10;
+    float dt = 0.01;
 
     // Array initializations
-    float u[size], v[size], u_prev[size], v_prev[size];
-     float dens[size], dens_prev[size];
-     float densNew[size];
+    float u[size]         = { 0 };
+    float v[size]         = { 0 };
+    float u_prev[size]    = { 0 };
+    float v_prev[size]    = { 0 };
+    float dens[size]      = { 0 };
+    float dens_prev[size] = { 0 };
 
-    float s[size];
-    for(int i = 1; i < size; i++){ 
-        s[i] = 0.0;
-        dens[i] = 0.0;
-        densNew[i] = 0.0;
+    float dens_source[size] = { 0 };
+    float u_source[size] = { 0 };
+    float v_source[size] = { 0 };
+
+    // Set conditions
+    for(int i = 0; i <= N+1; i++){
+        for(int j = 0; j <= N+1; j++){
+            u_source[ind(i,j)] = 100.0;
+            v_source[ind(i,j)] = 100.0;
+        }
     }
-    s[ind(5,5)] = 1.0;
+    dens_source[ind(13,13)] = 100.0;
 
-    densityStep(N, dens, s, u, v, 1, 0.1);
-    
-    displayGrid(N, dens);
+
+    // Simulation loop
+    while(true)
+    {
+        // Set sources
+        setSource(N, dens_prev, dens_source);
+        setSource(N, u_prev, u_source);
+        setSource(N, v_prev, v_source);
+
+        // Simulation
+        velocityStep(N, u, v, u_prev, v_prev, visc, dt);
+        densityStep(N, dens, dens_prev, u, v, diff, dt);
+        displayGrid(N, dens, 0.1);
+
+        // Wait for keyboard input
+        cin.get();
+    }
     
     return 0;
+}
+
+void setSource(int N, float * x, float * x_set)
+{
+    // Set array values at each cell
+    for(int i = 0; i <= N+1; i++){
+        for(int j = 0; j <= N+1; j++){
+            x[ind(i,j)] = x_set[ind(i,j)];
+        }
+    }
 }
 
 void addSource(int N, float * x, float * s, float dt)
@@ -48,6 +87,20 @@ void addSource(int N, float * x, float * s, float dt)
     for(int i = 0; i < size; i++){
         x[i] += dt * s[i];
     }
+}
+
+void setBoundary(int N, int b, float * x)
+{
+    for(int i = 1; i <= N; i++){
+        x[ind(0,  i)] = (b == 1) ? -x[ind(1,i)] : x[ind(1,i)];
+        x[ind(N+1,i)] = (b == 1) ? -x[ind(N,i)] : x[ind(N,i)];
+        x[ind(i,  0)] = (b == 2) ? -x[ind(i,1)] : x[ind(i,1)];
+        x[ind(i,N+1)] = (b == 2) ? -x[ind(i,N)] : x[ind(i,N)];
+    }
+    x[ind(0,    0)] = 0.5 * (x[ind(1,  0)] + x[ind(0,  1)]);
+    x[ind(0,  N+1)] = 0.5 * (x[ind(1,N+1)] + x[ind(0,  N)]);
+    x[ind(N+1,  0)] = 0.5 * (x[ind(N,  0)] + x[ind(N+1,1)]);
+    x[ind(N+1,N+1)] = 0.5 * (x[ind(N,N+1)] + x[ind(N+1,N)]);
 }
 
 void diffuse(int N, int b, float * x, float * x0, float diff, float dt)
@@ -86,12 +139,12 @@ void advect(int N, int b, float * d, float * d0, float * u, float * v, float dt)
             y = j - dt0 * v[ind(i,j)];
 
             // Discretize into adjacent grid elements
-            if(x < 0.5) { x = 0.5; }
-            if(x > N + 0.5) {x = N + 0.5; }
+            if(x < 0.5    ) { x = 0.5;     }
+            if(x > N + 0.5) { x = N + 0.5; }
             i0 = (int)x;
             i1 = i0 + 1;
 
-            if(y < 0.5) { y = 0.5; }
+            if(y < 0.5    ) { y = 0.5;     }
             if(y > N + 0.5) { y = N + 0.5; }
             j0 = (int)y;
             j1 = j0 + 1;
@@ -104,7 +157,6 @@ void advect(int N, int b, float * d, float * d0, float * u, float * v, float dt)
             // Calculate new value due to advection
             d[ind(i,j)] = s0 * (t0 * d0[ind(i0,j0)] + t1 * d0[ind(i0,j1)]) +
                           s1 * (t0 * d0[ind(i1,j0)] + t1 * d0[ind(i1,j1)]);
-
         }
     }
     setBoundary(N, b, d);
@@ -156,14 +208,44 @@ void hodgeProjection(int N, float * u, float * v, float * p, float * div)
     setBoundary(N, 2, v);
 }
 
-void displayGrid(int N, float * x)
+void velocityStep(int N, float * u, float * v, float * u0, float * v0, float visc, float dt)
+{
+    // Generate sources
+    addSource(N, u, u0, dt);
+    addSource(N, v, v0, dt);
+
+    // Perform velocity diffusion
+    swap(u0, u);
+    diffuse(N, 1, u, u0, visc, dt);
+    swap(v0, v);
+    diffuse(N, 2, v, v0, visc, dt);
+
+    // Perform Hodge projection to remove divergence
+    hodgeProjection(N, u, v, u0, v0);
+
+    // Perform velocity advection
+    swap(u0, u);
+    swap(v0, v);
+    advect(N, 1, u, u0, u0, v0, dt);
+    advect(N, 2, v, v0, u0, v0, dt);
+
+    // Perform Hodge projection again
+    hodgeProjection(N, u, v, u0, v0);
+
+}
+
+void displayGrid(int N, float * x, float min)
 {
     int size = (N+2) * (N+2);
-    string newChar;
-    for(int i = 1; i < N + 1; i++){
-        string str = "| ";
-        for(int j = N; j > 0; j--){
-            if(x[ind(i,j)] > 0.0){
+    
+    string str = "  ";
+    for(int i = 1; i <= N; i++) { str += "--"; }
+    cout << str << endl;
+
+    for(int i = 1; i <= N; i++){
+        str = "| ";
+        for(int j = N; j >= 1; j--){
+            if(x[ind(i,j)] > min){
                 str += "x";
             }else{
                 str += " ";
@@ -173,4 +255,8 @@ void displayGrid(int N, float * x)
         str += "|";
         cout << str << endl;
     }
+
+    str = "  ";
+    for(int i = 1; i <= N; i++){ str += "--"; }
+    cout << str << endl;
 }

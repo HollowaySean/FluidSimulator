@@ -17,6 +17,7 @@
         "stdexcept": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "cmath": "cpp"
     }
 }

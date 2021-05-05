@@ -1,103 +1,94 @@
-#include <iostream>
-#include <GL/glut.h>
+/* Function definition file for simulation state class */
 
+// Include header definition
+#include "SimState.h"
+
+// Includes and usings
+#include <iostream>
 using namespace std;
 
 // Macros
 #define ind(i,j) ((i) + (N + 2)*(j))
 #define swap(x0, x) {float *tmp = x0; x0 = x; x = tmp;}
 
-// Function initializations
-void setSource(int, float *, float *);
-void addSource(int, float *, float *, float);
-void setBoundary(int, int, float *);
-void diffuse(int, int, float *, float *, float, float);
-void advect(int, int, float *, float *, float *, float *, float);
-void densityStep(int, float *, float *, float *, float *, float, float);
-void hodgeProjection(int, float *, float *, float *, float *);
-void velocityStep(int, float *, float *, float *, float *, float, float);
-void displayGrid(int, float *, float);
 
-int main(int argc, char** argv)
+
+//// PUBLIC METHODS ////
+
+// Constructor without physical properties
+SimState::SimState(int N)
 {
-    // Declarations
-    int N = 25;
-    int size = (N + 2) * (N + 2);
-    int numIterations = 10;
-    float visc = 10;
-    float diff = 10;
-    float dt = 0.01;
+    // Property initializations
+    this -> N = N;
+    this -> size = (N + 2) * (N + 2);
 
     // Array initializations
-    float u[size]         = { 0 };
-    float v[size]         = { 0 };
-    float u_prev[size]    = { 0 };
-    float v_prev[size]    = { 0 };
-    float dens[size]      = { 0 };
-    float dens_prev[size] = { 0 };
-
-    float dens_source[size] = { 0 };
-    float u_source[size] = { 0 };
-    float v_source[size] = { 0 };
-
-    // Set conditions
-    for(int i = 0; i <= N+1; i++){
-        for(int j = 0; j <= N+1; j++){
-            u_source[ind(i,j)] = 100.0;
-            v_source[ind(i,j)] = 100.0;
-        }
-    }
-    dens_source[ind(13,13)] = 100.0;
-
-    // Run simulation and display loop
-    primaryLoop();
-
-    return 0;
+    u           = new float[size];
+    v           = new float[size];
+    dens        = new float[size];
+    u_prev      = new float[size];
+    v_prev      = new float[size];
+    dens_prev   = new float[size];
+    u_source    = new float[size];
+    v_source    = new float[size];
+    dens_source = new float[size];
 }
 
-class State {
-    public:
+// Constructor with physical properties
+SimState::SimState(int N, float visc, float diff)
+{
+    // Property initializations
+    this -> N = N;
+    this -> size = (N + 2) * (N + 2);
+    this -> visc = visc;
+    this -> diff = diff;
 
-        // Parameters
-        const int N;
-        const int size;
-        float visc;
-        float diff;
-
-        // Array pointers
-        const float *u;
-        const float *v;
-        const float *dens;
-        const float *u_prev;
-        const float *v_prev;
-        const float *dens_prev;
-        const float *u_source;
-        const float *v_source;
-        const float *dens_source;
-
-};
-
-void primaryLoop(){
-
-    // // Simulation loop
-    // while(true)
-    // {
-    //     // Set sources
-    //     setSource(N, dens_prev, dens_source);
-    //     setSource(N, u_prev, u_source);
-    //     setSource(N, v_prev, v_source);
-
-    //     // Simulation
-    //     velocityStep(N, u, v, u_prev, v_prev, visc, dt);
-    //     densityStep(N, dens, dens_prev, u, v, diff, dt);
-    //     displayGrid(N, dens, 0.1);
-
-    //     // Wait for keyboard input
-    //     cin.get();
-    // }
+    // Array initializations
+    u           = new float[size];
+    v           = new float[size];
+    dens        = new float[size];
+    u_prev      = new float[size];
+    v_prev      = new float[size];
+    dens_prev   = new float[size];
+    u_source    = new float[size];
+    v_source    = new float[size];
+    dens_source = new float[size];
 }
 
-void setSource(int N, float * x, float * x_set)
+// Set pointers to density and velocity sources
+void SimState::SetSources(float * densitySource, float * uSource, float * vSource)
+{
+    this -> dens_source = densitySource;
+    this -> u_source = uSource;
+    this -> v_source = vSource;
+}
+
+// Run simulation step
+void SimState::SimulationStep(float timeStep)
+{
+    // Set sources as input
+    SetSource(N, dens_prev, dens_source);
+    SetSource(N, u_prev,    u_source);
+    SetSource(N, v_prev,    v_source);
+
+    // Start futher simulation steps
+    VelocityStep(N, u, v, u_prev, v_prev, visc, timeStep);
+    DensityStep(N, dens, dens_prev, u, v, diff, timeStep);
+}
+
+// Property accessors
+float * SimState::GetDensity() { return dens; }
+float * SimState::GetUVelocity() { return u; }
+float * SimState::GetVVelocity() { return v; }
+int SimState::GetN() { return N; }
+int SimState::GetSize() { return size; }
+
+
+
+//// PRIVATE METHODS ////
+
+// Set array values to those of other array
+void SimState::SetSource(int N, float * x, float * x_set)
 {
     // Set array values at each cell
     for(int i = 0; i <= N+1; i++){
@@ -107,7 +98,8 @@ void setSource(int N, float * x, float * x_set)
     }
 }
 
-void addSource(int N, float * x, float * s, float dt)
+// Add source values into array values
+void SimState::AddSource(int N, float * x, float * s, float dt)
 {
     int size = (N+2) * (N+2);
 
@@ -117,7 +109,8 @@ void addSource(int N, float * x, float * s, float dt)
     }
 }
 
-void setBoundary(int N, int b, float * x)
+// Evaluate boundary conditions
+void SimState::SetBoundary(int N, int b, float * x)
 {
     for(int i = 1; i <= N; i++){
         x[ind(0,  i)] = (b == 1) ? -x[ind(1,i)] : x[ind(1,i)];
@@ -131,7 +124,8 @@ void setBoundary(int N, int b, float * x)
     x[ind(N+1,N+1)] = 0.5 * (x[ind(N,N+1)] + x[ind(N+1,N)]);
 }
 
-void diffuse(int N, int b, float * x, float * x0, float diff, float dt)
+// Perform diffusion step
+void SimState::Diffuse(int N, int b, float * x, float * x0, float diff, float dt)
 {
     int i, j, k;
     float a = dt * diff * N * N;
@@ -148,11 +142,12 @@ void diffuse(int N, int b, float * x, float * x0, float diff, float dt)
                 a*(x[ind(i-1,j)] + x[ind(i+1,j)] + x[ind(i,j-1)] + x[ind(i,j+1)])) / (1 + 4*a);
             }
         }
-        setBoundary(N, b, x);
+        SetBoundary(N, b, x);
     }
 }
 
-void advect(int N, int b, float * d, float * d0, float * u, float * v, float dt)
+// Perform advection step
+void SimState::Advect(int N, int b, float * d, float * d0, float * u, float * v, float dt)
 {
     int i, j, i0, j0, i1, j1;
     float x, y, s0, t0, s1, t1;
@@ -187,18 +182,11 @@ void advect(int N, int b, float * d, float * d0, float * u, float * v, float dt)
                           s1 * (t0 * d0[ind(i1,j0)] + t1 * d0[ind(i1,j1)]);
         }
     }
-    setBoundary(N, b, d);
+    SetBoundary(N, b, d);
 }
 
-void densityStep(int N, float * x, float * x0, float * u, float * v, float diff, float dt)
-{
-    // Perform source, diffusion, and advection steps
-    addSource(N, x, x0, dt);
-    swap(x0, x); diffuse(N, 0, x, x0, diff, dt);
-    swap(x0, x); advect(N, 0, x, x0, u, v, dt);
-}
-
-void hodgeProjection(int N, float * u, float * v, float * p, float * div)
+// Perform Hodge Projection for advection
+void SimState::HodgeProjection(int N, float * u, float * v, float * p, float * div)
 {
     int i, j, k;
     float h = 1.0/N;
@@ -211,8 +199,8 @@ void hodgeProjection(int N, float * u, float * v, float * p, float * div)
             p[ind(i,j)] = 0;
         }
     }
-    setBoundary(N, 0, div);
-    setBoundary(N, 0, p);
+    SetBoundary(N, 0, div);
+    SetBoundary(N, 0, p);
 
     // Gauss-Seidel relaxation for divergence
     for(k = 0; k < 20; k++){
@@ -222,7 +210,7 @@ void hodgeProjection(int N, float * u, float * v, float * p, float * div)
                                                p[ind(i,j-1)] + p[ind(i,j+1)])/4;
             }
         }
-        setBoundary(N, 0, p);
+        SetBoundary(N, 0, p);
     }
 
     // Calculate divergence-free Hodge projection in each grid element 
@@ -232,40 +220,58 @@ void hodgeProjection(int N, float * u, float * v, float * p, float * div)
             v[ind(i,j)] -= 0.5 * (p[ind(i,j+1)] - p[ind(i,j-1)])/h;
         }
     }
-    setBoundary(N, 1, u);
-    setBoundary(N, 2, v);
+    SetBoundary(N, 1, u);
+    SetBoundary(N, 2, v);
 }
 
-void velocityStep(int N, float * u, float * v, float * u0, float * v0, float visc, float dt)
+// Collected methods for density calculation
+void SimState::DensityStep(int N, float * x, float * x0, float * u, float * v, float diff, float dt)
+{
+    // Perform source, diffusion, and advection steps
+    AddSource(N, x, x0, dt);
+    swap(x0, x); Diffuse(N, 0, x, x0, diff, dt);
+    swap(x0, x); Advect(N, 0, x, x0, u, v, dt);
+}
+
+// Collected methods for velocity calculation
+void SimState::VelocityStep(int N, float * u, float * v, float * u0, float * v0, float visc, float dt)
 {
     // Generate sources
-    addSource(N, u, u0, dt);
-    addSource(N, v, v0, dt);
+    AddSource(N, u, u0, dt);
+    AddSource(N, v, v0, dt);
 
     // Perform velocity diffusion
     swap(u0, u);
-    diffuse(N, 1, u, u0, visc, dt);
+    Diffuse(N, 1, u, u0, visc, dt);
     swap(v0, v);
-    diffuse(N, 2, v, v0, visc, dt);
+    Diffuse(N, 2, v, v0, visc, dt);
 
     // Perform Hodge projection to remove divergence
-    hodgeProjection(N, u, v, u0, v0);
+    HodgeProjection(N, u, v, u0, v0);
 
     // Perform velocity advection
     swap(u0, u);
     swap(v0, v);
-    advect(N, 1, u, u0, u0, v0, dt);
-    advect(N, 2, v, v0, u0, v0, dt);
+    Advect(N, 1, u, u0, u0, v0, dt);
+    Advect(N, 2, v, v0, u0, v0, dt);
 
     // Perform Hodge projection again
-    hodgeProjection(N, u, v, u0, v0);
-
+    HodgeProjection(N, u, v, u0, v0);
 }
 
-void displayGrid(int N, float * x, float min)
-{
-    int size = (N+2) * (N+2);
-    
+
+
+/// EXTERNAL METHODS ///
+
+// Display density on terminal
+void DisplayGrid(SimState stateInput, float minimum)
+{    
+
+    // Get values from object
+    int N = stateInput.GetN();
+    float * x = stateInput.GetDensity();
+
+    // Display on grid
     string str = "  ";
     for(int i = 1; i <= N; i++) { str += "--"; }
     cout << str << endl;
@@ -273,7 +279,7 @@ void displayGrid(int N, float * x, float min)
     for(int i = 1; i <= N; i++){
         str = "| ";
         for(int j = N; j >= 1; j--){
-            if(x[ind(i,j)] > min){
+            if(x[ind(i,j)] > minimum){
                 str += "x";
             }else{
                 str += " ";
@@ -287,4 +293,5 @@ void displayGrid(int N, float * x, float min)
     str = "  ";
     for(int i = 1; i <= N; i++){ str += "--"; }
     cout << str << endl;
+
 }

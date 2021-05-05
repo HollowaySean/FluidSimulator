@@ -6,9 +6,9 @@
             "command": "/bin/g++",
             "args": [
                 "-g",
-                "${file}",
+                "src/*.cpp",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}",
+                "bin/FluidSimulator",
                 "-lglut",
                 "-lGLU",
                 "-lGL"

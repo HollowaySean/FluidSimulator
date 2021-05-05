@@ -8,7 +8,10 @@
                 "-g",
                 "${file}",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "-lglut",
+                "-lGLU",
+                "-lGL"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

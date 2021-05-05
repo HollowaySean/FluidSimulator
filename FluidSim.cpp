@@ -1,4 +1,5 @@
 #include <iostream>
+#include <GL/glut.h>
 
 using namespace std;
 
@@ -17,7 +18,7 @@ void hodgeProjection(int, float *, float *, float *, float *);
 void velocityStep(int, float *, float *, float *, float *, float, float);
 void displayGrid(int, float *, float);
 
-int main()
+int main(int argc, char** argv)
 {
     // Declarations
     int N = 25;
@@ -48,25 +49,52 @@ int main()
     }
     dens_source[ind(13,13)] = 100.0;
 
+    // Run simulation and display loop
+    primaryLoop();
 
-    // Simulation loop
-    while(true)
-    {
-        // Set sources
-        setSource(N, dens_prev, dens_source);
-        setSource(N, u_prev, u_source);
-        setSource(N, v_prev, v_source);
-
-        // Simulation
-        velocityStep(N, u, v, u_prev, v_prev, visc, dt);
-        densityStep(N, dens, dens_prev, u, v, diff, dt);
-        displayGrid(N, dens, 0.1);
-
-        // Wait for keyboard input
-        cin.get();
-    }
-    
     return 0;
+}
+
+class State {
+    public:
+
+        // Parameters
+        const int N;
+        const int size;
+        float visc;
+        float diff;
+
+        // Array pointers
+        const float *u;
+        const float *v;
+        const float *dens;
+        const float *u_prev;
+        const float *v_prev;
+        const float *dens_prev;
+        const float *u_source;
+        const float *v_source;
+        const float *dens_source;
+
+};
+
+void primaryLoop(){
+
+    // // Simulation loop
+    // while(true)
+    // {
+    //     // Set sources
+    //     setSource(N, dens_prev, dens_source);
+    //     setSource(N, u_prev, u_source);
+    //     setSource(N, v_prev, v_source);
+
+    //     // Simulation
+    //     velocityStep(N, u, v, u_prev, v_prev, visc, dt);
+    //     densityStep(N, dens, dens_prev, u, v, diff, dt);
+    //     displayGrid(N, dens, 0.1);
+
+    //     // Wait for keyboard input
+    //     cin.get();
+    // }
 }
 
 void setSource(int N, float * x, float * x_set)

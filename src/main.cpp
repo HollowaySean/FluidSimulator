@@ -19,8 +19,9 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int cellSize = 25;
     int N = 50;
+    int totalSize = 1000;
+    int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
 
     // Declarations
@@ -34,6 +35,11 @@ int main(int argc, char** argv){
     float u_source[size] = { 0 };
     float v_source[size] = { 0 };
 
+    // Set up source
+    int sourceLocation = ind(int(ceil(N/2)), int(ceil(N/2)), N);
+    u_source[sourceLocation] = 100.0;
+    v_source[sourceLocation] = 0.0;
+
     // Initialize state
     SimState testState = SimState(N, visc, diff);
     testState.SetSources(dens_source, u_source, v_source);
@@ -44,22 +50,23 @@ int main(int argc, char** argv){
     glutInitWindowSize(cellSize * N, cellSize * N);
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Fluid Simulator");
-
-    // Test code
     glClearColor(0.0,0.0,0.0,0.0);
     gluOrtho2D(0, cellSize * N, 0, cellSize * N);
 
+    // Set up GLEW environment
     GLenum err = glewInit();
     if(GLEW_OK != err){
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
     
-    
-    int sourceLocation = ind(int(ceil(N/2)), int(ceil(N/2)), N);
-
+    // Start timer
     chrono::milliseconds msNow = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch());
     unsigned int startTime = msNow.count();
+
+    // Set up source strength & direction
+    float strength = 50.0;
+    float angle = -90.0;
 
     // Simulation loop
     while(true)
@@ -72,17 +79,18 @@ int main(int argc, char** argv){
         chrono::milliseconds msNow = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch());
         unsigned int msNowInt = msNow.count();
 
-        for(int i = 0; i <= N+1; i++){
-            for(int j = 0; j <= N+1; j++){
-                u_source[ind(i,j,N)] = 0.001 * abs(i - N/2) * (j - N/2);
-                v_source[ind(i,j,N)] = 0.001 * (i - N/2) * abs(j - N/2);
-            }
-        }
+        // Randomize
+        angle += static_cast <float> ((rand() % 3) - 1) * 2.0;
+        strength += static_cast <float> ((rand() % 3) - 1) * 0.5;
 
-        if(msNowInt - startTime < 10000){
-            dens_source[sourceLocation] = 1000.0;
+        if(msNowInt - startTime < 20000){
+            dens_source[sourceLocation] = 100.0;
+            u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
+            v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
         }else{
             dens_source[sourceLocation] = 0.0;
+            u_source[sourceLocation] = 0.0;
+            v_source[sourceLocation] = 0.0;
         }
 
         // Update sources

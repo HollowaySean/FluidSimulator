@@ -6,6 +6,7 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "SimState.h"
+#include "SimTools.h"
 
 // Namespaces
 using namespace std;
@@ -19,7 +20,7 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 60;
+    int N = 50;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
@@ -81,7 +82,6 @@ int main(int argc, char** argv){
         // Draw current density to OpenGL window
         DisplayGLWindow(testState, cellSize);
 
-
         // Set sources
         unsigned int msNowInt = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();
 
@@ -125,7 +125,7 @@ int main(int argc, char** argv){
 
             // Read out stats
             cout << "Current frame rate: " << frameRate << endl;
-            // cout << "Frames below max FPS: " << lagFrames << endl;
+            cout << "Frames below max FPS: " << lagFrames << endl;
 
             // Reset counters
             frameCount = 0;

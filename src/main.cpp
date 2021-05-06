@@ -21,17 +21,15 @@ int main(int argc, char** argv){
 
     // Window option
     int N = 50;
-    int totalSize = 1000;
+    int totalSize = 500;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
+    int maxFrameRate = 60;
 
     // Declarations
     float lengthScale = 0.1;
     float visc = 0.00001 / (lengthScale * lengthScale);
     float diff = 0.00001 / (lengthScale * lengthScale);
-    float maxFrameRate = 25.0;
-    float dt = 1 / maxFrameRate;
-    unsigned int frameTime = uint(dt * 1000);
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -63,34 +61,29 @@ int main(int argc, char** argv){
     }
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
     
-    // Start timer
-    chrono::milliseconds msNow = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch());
-    unsigned int simStartTime = msNow.count();
-    unsigned int startTime = simStartTime;
-    unsigned int frameTimer = simStartTime;
+    // Initialize timers
+    SimTimer timer = SimTimer(maxFrameRate);
+    timer.StartSimulation();
 
     // Set up source strength & direction
     float strength = 50.0;
     float angle = -91.0;
 
-    int frameCount = 1;
-    int lagFrames = 0;
-
     // Simulation loop
     while(true)
     {
+        // Declare beginning of frame
+        timer.StartFrame();
+
         // Draw current density to OpenGL window
         DisplayGLWindow(testState, cellSize);
-
-        // Set sources
-        unsigned int msNowInt = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();
 
         // Randomize
         angle += static_cast <float> ((rand() % 3) - 1) * 2.0;
         strength += static_cast <float> ((rand() % 3) - 1) * 0.5;
 
         // Add sources for first 10 seconds
-        if(msNowInt - simStartTime < 10000){
+        if(timer.RunTime() < 10000){
             dens_source[sourceLocation] = 100.0;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
@@ -104,37 +97,13 @@ int main(int argc, char** argv){
         testState.SetSources(dens_source, u_source, v_source);
 
         // Update simulation state
-        testState.SimulationStep(dt);
+        testState.SimulationStep(timer.DeltaTime());
 
-        // Sleep until frame time is complete
-        unsigned int currentTime = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();
-        int timeElapsed = currentTime - startTime;
-        if(timeElapsed < frameTime)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(frameTime - timeElapsed));
-        }else{
-            lagFrames++;
-        }
+        // Sleep until frame is complete
+        timer.EndFrame();
 
         // Read out frame rate every 100 frames
-        if(frameCount == 100){
-
-            // Calculate frame rate
-            float frameRate = round((1000 * 100) / (currentTime - frameTimer));
-            frameTimer = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();            
-
-            // Read out stats
-            cout << "Current frame rate: " << frameRate << endl;
-            cout << "Frames below max FPS: " << lagFrames << endl;
-
-            // Reset counters
-            frameCount = 0;
-            lagFrames = 0;
-        }
-        frameCount++;
-
-        // Reset frame timer
-        startTime = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();
+        timer.DisplayFrameRate(100);
     }
 
     // Exit code
@@ -143,16 +112,12 @@ int main(int argc, char** argv){
 
 void DisplayGLWindow(SimState currentState, int cellSize)
 {
+    // Set properties
     int pixelsPerSquare = cellSize;
     int N = currentState.GetN();
-    float brightnessFactor = 1.0;
 
     // Get density map
     float * brightness = currentState.GetDensity();
-    for(int i = 0; i < currentState.GetSize(); i++){
-
-        brightness[i] = (brightness[i] > (1.0 / brightnessFactor)) ? 1.0 : brightnessFactor * brightness[i];
-    }
 
     // Clear OpenGL window
     glClear(GL_COLOR_BUFFER_BIT);

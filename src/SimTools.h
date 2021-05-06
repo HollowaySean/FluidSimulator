@@ -16,6 +16,7 @@ class SimTimer
         // Public accessors
         void SetFrameRate(int maxFrameRate);
         float DeltaTime();
+        int RunTime();
 
     private:
 
@@ -32,4 +33,5 @@ class SimTimer
         // Timers
         unsigned int simTimerStart;
         unsigned int frameTimerStart;
+        unsigned int monitorTimerStart;
 };

@@ -18,6 +18,7 @@ SimTimer::SimTimer(int maxFrameRate)
 {
     this -> maxFrameRate = maxFrameRate;
     frameCounter = 0;
+    totalFrameCounter = 0;
     frameTime = 1000.0 / float(maxFrameRate);
 }
 
@@ -25,6 +26,7 @@ SimTimer::SimTimer(int maxFrameRate)
 void SimTimer::StartSimulation()
 {
     simTimerStart = Now();
+    monitorTimerStart = Now();
 }
 
 // Start frame timer, increment frame
@@ -59,7 +61,7 @@ void SimTimer::DisplayFrameRate(int framesPerUpdate)
         
         // Calculate frame rates
         unsigned int currentTime = Now();
-        float currentFrameRate = (framesPerUpdate * 1000) / float((currentTime - frameTimerStart));
+        float currentFrameRate = (framesPerUpdate * 1000) / float((currentTime - monitorTimerStart));
         float avgFrameRate = (totalFrameCounter * 1000) / float((currentTime - simTimerStart));
         
         // Read out to std output
@@ -67,6 +69,9 @@ void SimTimer::DisplayFrameRate(int framesPerUpdate)
 
         // Reset frame counter
         frameCounter = 0;
+
+        // Reset monitor timer
+        monitorTimerStart = Now();
     }
 }
 
@@ -74,6 +79,12 @@ void SimTimer::DisplayFrameRate(int framesPerUpdate)
 float SimTimer::DeltaTime()
 {
     return timeStep;
+}
+
+// Get current run time in milliseconds
+int SimTimer::RunTime()
+{
+    return Now() - simTimerStart;
 }
 
 

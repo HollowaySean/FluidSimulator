@@ -87,6 +87,12 @@ int SimTimer::RunTime()
     return Now() - simTimerStart;
 }
 
+// Get current frame count
+int SimTimer::CurrentFrame()
+{
+    return totalFrameCounter;
+}
+
 
 
 //// PRIVATE METHODS ////

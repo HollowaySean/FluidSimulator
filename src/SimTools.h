@@ -17,6 +17,7 @@ class SimTimer
         void SetFrameRate(int maxFrameRate);
         float DeltaTime();
         int RunTime();
+        int CurrentFrame();
 
     private:
 

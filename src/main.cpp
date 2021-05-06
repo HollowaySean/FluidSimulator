@@ -21,7 +21,7 @@ int main(int argc, char** argv){
 
     // Window option
     int N = 50;
-    int totalSize = 500;
+    int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
     int maxFrameRate = 60;
@@ -36,10 +36,6 @@ int main(int argc, char** argv){
     float u_source[size] = { 0 };
     float v_source[size] = { 0 };
 
-    // Set up source
-    int sourceLocation = ind(int(ceil(N/2)), int(ceil(N/2)), N);
-    u_source[sourceLocation] = 100.0;
-    v_source[sourceLocation] = 0.0;
 
     // Initialize state
     SimState testState = SimState(N, visc, diff);
@@ -65,9 +61,10 @@ int main(int argc, char** argv){
     SimTimer timer = SimTimer(maxFrameRate);
     timer.StartSimulation();
 
-    // Set up source strength & direction
+    // Set up source
     float strength = 50.0;
     float angle = -91.0;
+    int sourceLocation = ind(int(ceil(N/2)), int(ceil(N/2)), N);
 
     // Simulation loop
     while(true)
@@ -104,6 +101,10 @@ int main(int argc, char** argv){
 
         // Read out frame rate every 100 frames
         timer.DisplayFrameRate(100);
+
+        if(timer.CurrentFrame() == 1000){
+            break;
+        }
     }
 
     // Exit code

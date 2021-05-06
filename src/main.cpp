@@ -19,7 +19,7 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 50;
+    int N = 60;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
@@ -28,7 +28,9 @@ int main(int argc, char** argv){
     float lengthScale = 0.1;
     float visc = 0.00001 / (lengthScale * lengthScale);
     float diff = 0.00001 / (lengthScale * lengthScale);
-    float dt = 0.04;
+    float maxFrameRate = 25.0;
+    float dt = 1 / maxFrameRate;
+    unsigned int frameTime = uint(dt * 1000);
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -62,11 +64,16 @@ int main(int argc, char** argv){
     
     // Start timer
     chrono::milliseconds msNow = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch());
-    unsigned int startTime = msNow.count();
+    unsigned int simStartTime = msNow.count();
+    unsigned int startTime = simStartTime;
+    unsigned int frameTimer = simStartTime;
 
     // Set up source strength & direction
     float strength = 50.0;
-    float angle = -90.0;
+    float angle = -91.0;
+
+    int frameCount = 1;
+    int lagFrames = 0;
 
     // Simulation loop
     while(true)
@@ -76,14 +83,14 @@ int main(int argc, char** argv){
 
 
         // Set sources
-        chrono::milliseconds msNow = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch());
-        unsigned int msNowInt = msNow.count();
+        unsigned int msNowInt = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();
 
         // Randomize
         angle += static_cast <float> ((rand() % 3) - 1) * 2.0;
         strength += static_cast <float> ((rand() % 3) - 1) * 0.5;
 
-        if(msNowInt - startTime < 20000){
+        // Add sources for first 10 seconds
+        if(msNowInt - simStartTime < 10000){
             dens_source[sourceLocation] = 100.0;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
@@ -99,9 +106,35 @@ int main(int argc, char** argv){
         // Update simulation state
         testState.SimulationStep(dt);
 
-        // Sleep for one second (improve this)
-        std::this_thread::sleep_for(std::chrono::milliseconds(int(1000 * dt)));
+        // Sleep until frame time is complete
+        unsigned int currentTime = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();
+        int timeElapsed = currentTime - startTime;
+        if(timeElapsed < frameTime)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(frameTime - timeElapsed));
+        }else{
+            lagFrames++;
+        }
 
+        // Read out frame rate every 100 frames
+        if(frameCount == 100){
+
+            // Calculate frame rate
+            float frameRate = round((1000 * 100) / (currentTime - frameTimer));
+            frameTimer = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();            
+
+            // Read out stats
+            cout << "Current frame rate: " << frameRate << endl;
+            // cout << "Frames below max FPS: " << lagFrames << endl;
+
+            // Reset counters
+            frameCount = 0;
+            lagFrames = 0;
+        }
+        frameCount++;
+
+        // Reset frame timer
+        startTime = chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();
     }
 
     // Exit code

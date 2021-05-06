@@ -76,8 +76,8 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Randomize
-        angle += static_cast <float> ((rand() % 3) - 1) * 2.0;
-        strength += static_cast <float> ((rand() % 3) - 1) * 0.5;
+        angle += (static_cast <float> ((rand() % 3) - 1) * 200.0) * timer.DeltaTime();
+        strength += (static_cast <float> ((rand() % 3) - 1) * 200.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds
         if(timer.RunTime() < 10000){
@@ -102,9 +102,8 @@ int main(int argc, char** argv){
         // Read out frame rate every 100 frames
         timer.DisplayFrameRate(100);
 
-        if(timer.CurrentFrame() == 1000){
-            break;
-        }
+        // Exit after 1000 frames
+        if(timer.CurrentFrame() == 1000){ break; }
     }
 
     // Exit code
@@ -144,5 +143,4 @@ void DisplayGLWindow(SimState currentState, int cellSize)
 
     // Complete OpenGL loop
     glutSwapBuffers();
-
 }

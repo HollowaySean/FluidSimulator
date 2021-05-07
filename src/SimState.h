@@ -6,7 +6,7 @@ class SimState
 
         // Constructors
         SimState(int N);
-        SimState(int N, float visc, float diff);
+        SimState(int N, float visc, float diff, float grav, float airDensity);
 
         // Public methods
         void SetSources(float * density, float * uVelocity, float * vVelocity);
@@ -24,6 +24,8 @@ class SimState
         // Physical properties
         float visc;
         float diff;
+        float grav;
+        float airDensity;
 
     private:
 
@@ -34,12 +36,14 @@ class SimState
         // Internal Methods
         void SetSource(int, float *, float *);
         void AddSource(int, float *, float *, float);
+        void AddConstantSource(int, float *, float, float);
+        void Gravitate(int, float *, float *, float, float, float);
         void SetBoundary(int, int, float *);
         void Diffuse(int, int, float *, float *, float, float);
         void Advect(int, int, float *, float *, float *, float *, float);
         void DensityStep(int, float *, float *, float *, float *, float, float);
         void HodgeProjection(int, float *, float *, float *, float *);
-        void VelocityStep(int, float *, float *, float *, float *, float, float);
+        void VelocityStep(int, float *, float *, float *, float *, float *, float, float, float, float);
 
         /// Arrays: ///
         // Current grid

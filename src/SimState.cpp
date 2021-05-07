@@ -35,13 +35,15 @@ SimState::SimState(int N)
 }
 
 // Constructor with physical properties
-SimState::SimState(int N, float visc, float diff)
+SimState::SimState(int N, float visc, float diff, float grav, float airDensity)
 {
     // Property initializations
     this -> N = N;
     this -> size = (N + 2) * (N + 2);
     this -> visc = visc;
     this -> diff = diff;
+    this -> grav = grav;
+    this -> airDensity = airDensity;
 
     // Array initializations
     u           = new float[size];
@@ -72,7 +74,7 @@ void SimState::SimulationStep(float timeStep)
     SetSource(N, v_prev,    v_source);
 
     // Start futher simulation steps
-    VelocityStep(N, u, v, u_prev, v_prev, visc, timeStep);
+    VelocityStep(N, u, v, u_prev, v_prev, dens, airDensity, visc, grav, timeStep);
     DensityStep(N, dens, dens_prev, u, v, diff, timeStep);
 }
 
@@ -106,6 +108,17 @@ void SimState::AddSource(int N, float * x, float * s, float dt)
     // Loop through grid elements
     for(int i = 0; i < size; i++){
         x[i] += dt * s[i];
+    }
+}
+
+// Add constant source value into array values
+void SimState::AddConstantSource(int N, float * x, float s, float dt)
+{
+    int size = (N+2) * (N+2);
+
+    // Loop through grid elements
+    for(int i = 0; i < size; i++){
+        x[i] += dt * s;
     }
 }
 
@@ -224,6 +237,21 @@ void SimState::HodgeProjection(int N, float * u, float * v, float * p, float * d
     SetBoundary(N, 2, v);
 }
 
+void SimState::Gravitate(int N, float * v, float * dens, float adens, float grav, float dt)
+{
+    int i, j;
+    float g = dt * grav;
+
+    // Loop through grid elements
+    for(i = 1; i <= N; i++){
+        for(j = 1; j <= N; j++){
+
+            // Gravitation and buoyancy
+            v[ind(i,j)] += g * ((dens[ind(i,j)] - adens) / (dens[ind(i,j)] + adens)); 
+        }
+    }
+}
+
 // Collected methods for density calculation
 void SimState::DensityStep(int N, float * x, float * x0, float * u, float * v, float diff, float dt)
 {
@@ -234,11 +262,14 @@ void SimState::DensityStep(int N, float * x, float * x0, float * u, float * v, f
 }
 
 // Collected methods for velocity calculation
-void SimState::VelocityStep(int N, float * u, float * v, float * u0, float * v0, float visc, float dt)
+void SimState::VelocityStep(int N, float * u, float * v, float * u0, float * v0, float * dens, float adens, float visc, float grav, float dt)
 {
     // Generate sources
     AddSource(N, u, u0, dt);
     AddSource(N, v, v0, dt);
+
+    // Perform gravitational acceleration
+    Gravitate(N, v, dens, adens, grav, dt);
 
     // Perform velocity diffusion
     swap(u0, u);

@@ -20,16 +20,18 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 50;
+    int N = 100;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
-    int maxFrameRate = 60;
+    int maxFrameRate = 25;
 
     // Declarations
-    float lengthScale = 0.1;
+    float lengthScale = 10.0;
     float visc = 0.00001 / (lengthScale * lengthScale);
     float diff = 0.00001 / (lengthScale * lengthScale);
+    float grav = -9.8 / lengthScale;
+    float airDensity = 0.001 * 1.1644 * lengthScale * lengthScale / (N * N);
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -37,8 +39,9 @@ int main(int argc, char** argv){
     float v_source[size] = { 0 };
 
 
+
     // Initialize state
-    SimState testState = SimState(N, visc, diff);
+    SimState testState = SimState(N, visc, diff, grav, airDensity);
     testState.SetSources(dens_source, u_source, v_source);
 
     // Set up OpenGL state
@@ -57,14 +60,18 @@ int main(int argc, char** argv){
     }
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
     
+
+
     // Initialize timers
     SimTimer timer = SimTimer(maxFrameRate);
     timer.StartSimulation();
 
     // Set up source
     float strength = 50.0;
-    float angle = -91.0;
-    int sourceLocation = ind(int(ceil(N/2)), int(ceil(N/2)), N);
+    float angle = 90.0;
+    int sourceLocation = ind(int(ceil(N/2)), 2, N);
+
+
 
     // Simulation loop
     while(true)
@@ -76,11 +83,11 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Randomize
-        angle += (static_cast <float> ((rand() % 3) - 1) * 200.0) * timer.DeltaTime();
-        strength += (static_cast <float> ((rand() % 3) - 1) * 200.0) * timer.DeltaTime();
+        angle += (static_cast <float> ((rand() % 3) - 1) * 0.0) * timer.DeltaTime();
+        strength += (static_cast <float> ((rand() % 3) - 1) * 20.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds
-        if(timer.RunTime() < 10000){
+        if(timer.RunTime() < 20000){
             dens_source[sourceLocation] = 100.0;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
@@ -103,7 +110,7 @@ int main(int argc, char** argv){
         timer.DisplayFrameRate(100);
 
         // Exit after 1000 frames
-        if(timer.CurrentFrame() == 1000){ break; }
+        if(timer.CurrentFrame() == 10000){ break; }
     }
 
     // Exit code
@@ -115,6 +122,7 @@ void DisplayGLWindow(SimState currentState, int cellSize)
     // Set properties
     int pixelsPerSquare = cellSize;
     int N = currentState.GetN();
+    float bMod = 1.0;
 
     // Get density map
     float * brightness = currentState.GetDensity();
@@ -126,16 +134,32 @@ void DisplayGLWindow(SimState currentState, int cellSize)
     for(int x = 0; x <= N - 1; x++){
         for(int y = 0; y <= N - 1; y++){
 
-
             glBegin(GL_QUADS);
-            glColor3f(brightness[ind(x,y,N)], brightness[ind(x,y,N)], brightness[ind(x,y,N)]);
-            glVertex2i(pixelsPerSquare * x,     pixelsPerSquare * y);
-            glColor3f(brightness[ind(x+1,y,N)], brightness[ind(x+1,y,N)], brightness[ind(x+1,y,N)]);
-            glVertex2i(pixelsPerSquare * (x+1), pixelsPerSquare * y);
-            glColor3f(brightness[ind(x+1,y+1,N)], brightness[ind(x+1,y+1,N)], brightness[ind(x+1,y+1,N)]);
-            glVertex2i(pixelsPerSquare * (x+1), pixelsPerSquare * (y+1));
-            glColor3f(brightness[ind(x,y+1,N)], brightness[ind(x,y+1,N)], brightness[ind(x,y+1,N)]);
-            glVertex2i(pixelsPerSquare * x,     pixelsPerSquare * (y+1));
+
+            glColor3f(  bMod * brightness[ind(x,y,N)], 
+                        bMod * brightness[ind(x,y,N)], 
+                        bMod * brightness[ind(x,y,N)]);
+            glVertex2i( pixelsPerSquare * x,     
+                        pixelsPerSquare * y);
+
+            glColor3f(  bMod * brightness[ind(x+1,y,N)], 
+                        bMod * brightness[ind(x+1,y,N)], 
+                        bMod * brightness[ind(x+1,y,N)]);
+            glVertex2i( pixelsPerSquare * (x+1), 
+                        pixelsPerSquare * y);
+
+            glColor3f(  bMod * brightness[ind(x+1,y+1,N)], 
+                        bMod * brightness[ind(x+1,y+1,N)], 
+                        bMod * brightness[ind(x+1,y+1,N)]);
+            glVertex2i( pixelsPerSquare * (x+1), 
+                        pixelsPerSquare * (y+1));
+
+            glColor3f(  bMod * brightness[ind(x,y+1,N)], 
+                        bMod * brightness[ind(x,y+1,N)], 
+                        bMod * brightness[ind(x,y+1,N)]);
+            glVertex2i( pixelsPerSquare * x,     
+                        pixelsPerSquare * (y+1));
+
             glEnd();
             glFlush();
         }

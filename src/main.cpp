@@ -20,18 +20,18 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 100;
+    int N = 50;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
     int maxFrameRate = 25;
 
     // Declarations
-    float lengthScale = 10.0;
+    float lengthScale = 1.0;
     float visc = 0.00001 / (lengthScale * lengthScale);
     float diff = 0.00001 / (lengthScale * lengthScale);
     float grav = -9.8 / lengthScale;
-    float airDensity = 0.001 * 1.1644 * lengthScale * lengthScale / (N * N);
+    float airDensity = 1.1644 * lengthScale * lengthScale;
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -67,9 +67,9 @@ int main(int argc, char** argv){
     timer.StartSimulation();
 
     // Set up source
-    float strength = 50.0;
+    float strength = 1000.0;
     float angle = 90.0;
-    int sourceLocation = ind(int(ceil(N/2)), 2, N);
+    int sourceLocation = ind(int(ceil(N/2)), 5, N);
 
 
 
@@ -83,7 +83,7 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Randomize
-        angle += (static_cast <float> ((rand() % 3) - 1) * 0.0) * timer.DeltaTime();
+        angle += (static_cast <float> ((rand() % 3) - 1) * 2.0) * timer.DeltaTime();
         strength += (static_cast <float> ((rand() % 3) - 1) * 20.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds

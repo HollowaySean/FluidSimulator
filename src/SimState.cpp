@@ -247,7 +247,7 @@ void SimState::Gravitate(int N, float * v, float * dens, float adens, float grav
         for(j = 1; j <= N; j++){
 
             // Gravitation and buoyancy
-            v[ind(i,j)] += g * ((dens[ind(i,j)] - adens) / (dens[ind(i,j)] + adens)); 
+            v[ind(i,j)] += g * (dens[ind(i,j)] / (dens[ind(i,j)] + adens)); 
         }
     }
 }

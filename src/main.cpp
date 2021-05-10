@@ -24,16 +24,15 @@ int main(int argc, char** argv){
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
-    int maxFrameRate = 25;
+    int maxFrameRate = 60;
 
     // Declarations
     float lengthScale = 1.0;
     float visc = 0.00001;
-    float diff = 0.000000001;
+    float diff = 0.0000001;
     float grav = -9.8;
     float airDensity = 1.29235;
-    // float massRatio = 0.5416;
-    float massRatio = 0.9;
+    float massRatio = 0.5416;
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -71,9 +70,9 @@ int main(int argc, char** argv){
     timer.StartSimulation();
 
     // Set up source
-    float strength = 100.0;
+    float strength = 20.0;
     float angle = 90.0;
-    float thickness = 10.0;
+    float thickness = 0.1;
     int sourceLocation = ind(int(ceil(N/2)), 5, N);
 
 
@@ -88,7 +87,7 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Randomize
-        // angle += (static_cast <float> ((rand() % 11) - 5) * 10.0) * timer.DeltaTime();
+        angle += (static_cast <float> ((rand() % 11) - 5) * 10.0) * timer.DeltaTime();
         // strength += (static_cast <float> ((rand() % 3) - 1) * 0.0) * timer.DeltaTime();
         // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
 
@@ -126,7 +125,7 @@ int main(int argc, char** argv){
 float LerpColor(float input, int channel)
 {
     // Parameters
-    float bMod = 5.0;
+    float bMod = 500.0;
 
     float output = bMod * input;
 

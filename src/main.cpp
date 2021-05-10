@@ -28,10 +28,12 @@ int main(int argc, char** argv){
 
     // Declarations
     float lengthScale = 1.0;
-    float visc = 0.00001 / (lengthScale * lengthScale);
-    float diff = 0.00001 / (lengthScale * lengthScale);
-    float grav = -9.8 / lengthScale;
-    float airDensity = 1.1644 * lengthScale * lengthScale;
+    float visc = 0.00001;
+    float diff = 0.000000001;
+    float grav = -9.8;
+    float airDensity = 1.29235;
+    // float massRatio = 0.5416;
+    float massRatio = 0.9;
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -41,8 +43,10 @@ int main(int argc, char** argv){
 
 
     // Initialize state
-    SimState testState = SimState(N, visc, diff, grav, airDensity);
+    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio);
+    SimState testState = SimState(N, params);
     testState.SetSources(dens_source, u_source, v_source);
+    testState.params.gravityOn = true;
 
     // Set up OpenGL state
     glutInit(&argc, argv);
@@ -67,8 +71,9 @@ int main(int argc, char** argv){
     timer.StartSimulation();
 
     // Set up source
-    float strength = 1000.0;
+    float strength = 100.0;
     float angle = 90.0;
+    float thickness = 10.0;
     int sourceLocation = ind(int(ceil(N/2)), 5, N);
 
 
@@ -83,12 +88,13 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Randomize
-        angle += (static_cast <float> ((rand() % 3) - 1) * 2.0) * timer.DeltaTime();
-        strength += (static_cast <float> ((rand() % 3) - 1) * 20.0) * timer.DeltaTime();
+        // angle += (static_cast <float> ((rand() % 11) - 5) * 10.0) * timer.DeltaTime();
+        // strength += (static_cast <float> ((rand() % 3) - 1) * 0.0) * timer.DeltaTime();
+        // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds
         if(timer.RunTime() < 20000){
-            dens_source[sourceLocation] = 100.0;
+            dens_source[sourceLocation] = thickness;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
         }else{

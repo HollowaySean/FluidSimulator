@@ -19,6 +19,7 @@
         "type_traits": "cpp",
         "thread": "cpp",
         "cmath": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "new": "cpp"
     }
 }

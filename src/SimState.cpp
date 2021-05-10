@@ -24,20 +24,48 @@ SimState::SimState(int N)
 
     // Struct initializations
     this -> params = SimParams();
-    this -> fields = SimFields(N);
+    this -> fields = SimFields(size);
+
+    // Initialize arrays to 0
+    SetConstantSource(fields.dens, 0.0);
+    SetConstantSource(fields.xVel, 0.0);
+    SetConstantSource(fields.yVel, 0.0);
 }
 
 // Constructor with physical properties
-SimState::SimState(int N, float viscosity, float diffusion, float gravity, float airDensity)
+SimState::SimState(int N, float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio)
 {
     // Property initializations
     this -> N = N;
     this -> size = (N + 2) * (N + 2);
 
     // Struct initializations
-    this -> params = SimParams(viscosity, diffusion, gravity, airDensity);
-    this -> fields = SimFields(N);
+    this -> params = SimParams(lengthScale, viscosity, diffusion, gravity, airDensity, massRatio);
+    this -> fields = SimFields(size);
+
+    // Initialize arrays to 0
+    SetConstantSource(fields.dens, 0.0);
+    SetConstantSource(fields.xVel, 0.0);
+    SetConstantSource(fields.yVel, 0.0);
 }
+
+// Constructor taking param struct
+SimState::SimState(int N, SimParams paramsIn)
+{
+    // Property initializations
+    this -> N = N;
+    this -> size = (N + 2) * (N + 2);
+
+    // Struct initializations
+    this -> params = paramsIn;
+    this -> fields = SimFields(size);
+
+    // Initialize arrays to 0
+    SetConstantSource(fields.dens, 0.0);
+    SetConstantSource(fields.xVel, 0.0);
+    SetConstantSource(fields.yVel, 0.0);
+}
+
 
 // Set pointers to density and velocity sources
 void SimState::SetSources(float * density, float * xVelocity, float * yVelocity)
@@ -81,6 +109,15 @@ void SimState::SetSource(float * x, float * x_set)
     }
 }
 
+// Set array values to constant source value
+void SimState::SetConstantSource(float * x, float x_set)
+{
+    // Set array values at each cell
+    for(int i = 0; i < size; i++){
+        x[i] = x_set;
+    }
+}
+
 // Add source values into array values
 void SimState::AddSource(float * x, float * s, float dt)
 {
@@ -117,12 +154,12 @@ void SimState::SetBoundary(int b, float * x)
 // Perform diffusion step
 void SimState::Diffuse(int b, float * x, float * x0, float diff, float dt)
 {
-    // Adjust a to account for cell size
-    // TODO:ADJUST
-    float a = dt * diff * N * N;
+    // Adjust a to account for cell size and timestep
+    float cellSize = params.lengthScale / N;
+    float a = dt * diff / (cellSize * cellSize);
 
     // Loop through Gauss-Seidel relaxation steps
-    for(int k = 0; k < 20; k++){
+    for(int k = 0; k < params.solverSteps; k++){
 
         // Loop through grid elements
         for(int i = 1; i <= N; i++){
@@ -142,7 +179,10 @@ void SimState::Advect(int b, float * d, float * d0, float * u, float * v, float 
 {
     int i0, j0, i1, j1;
     float x, y, s0, t0, s1, t1;
-    float dt0 = dt * N;
+    
+    // Adjust dt to account for cell size
+    float cellSize = params.lengthScale / N;
+    float dt0 = dt / cellSize;
 
     // Loop through grid elements
     for(int i = 1; i <= N; i++){
@@ -179,12 +219,13 @@ void SimState::Advect(int b, float * d, float * d0, float * u, float * v, float 
 // Perform Hodge Projection for advection
 void SimState::HodgeProjection(float * u, float * v, float * p, float * div)
 {
-    float h = 1.0/N;
+    // Adjust for cell size
+    float cellSize = params.lengthScale / N;
 
     // Calculate divergence in each grid element 
     for(int i = 1; i <= N; i++){
         for(int j = 1; j <= N; j++){
-            div[ind(i,j)] = -0.5 * h * (u[ind(i+1,j)]-u[ind(i-1,j)]+
+            div[ind(i,j)] = -0.5 * cellSize * (u[ind(i+1,j)]-u[ind(i-1,j)]+
                                         v[ind(i,j+1)]-v[ind(i,j-1)]);
             p[ind(i,j)] = 0;
         }
@@ -193,7 +234,7 @@ void SimState::HodgeProjection(float * u, float * v, float * p, float * div)
     SetBoundary(0, p);
 
     // Gauss-Seidel relaxation for divergence
-    for(int k = 0; k < 20; k++){
+    for(int k = 0; k < params.solverSteps; k++){
         for(int i = 1; i <= N; i++){
             for(int j = 1; j <= N; j++){
                 p[ind(i,j)] = (div[ind(i,j)] + p[ind(i-1,j)] + p[ind(i+1,j)] +
@@ -206,24 +247,31 @@ void SimState::HodgeProjection(float * u, float * v, float * p, float * div)
     // Calculate divergence-free Hodge projection in each grid element 
     for(int i = 1; i <= N; i++){
         for(int j = 1; j <= N; j++){
-            u[ind(i,j)] -= 0.5 * (p[ind(i+1,j)] - p[ind(i-1,j)])/h;
-            v[ind(i,j)] -= 0.5 * (p[ind(i,j+1)] - p[ind(i,j-1)])/h;
+            u[ind(i,j)] -= 0.5 * (p[ind(i+1,j)] - p[ind(i-1,j)]) / cellSize;
+            v[ind(i,j)] -= 0.5 * (p[ind(i,j+1)] - p[ind(i,j-1)]) / cellSize;
         }
     }
     SetBoundary(1, u);
     SetBoundary(2, v);
 }
 
-void SimState::Gravitate(float * v, float * dens, float adens, float grav, float dt)
+void SimState::Gravitate(float * v, float * dens, float adens, float massRatio, float grav, float dt)
 {
+    // Adjust for time scale
     float g = dt * grav;
+    float k = adens / (1.0 - massRatio);
 
     // Loop through grid elements
     for(int i = 1; i <= N; i++){
         for(int j = 1; j <= N; j++){
 
             // Gravitation and buoyancy
-            v[ind(i,j)] += g * (dens[ind(i,j)] / (dens[ind(i,j)] + adens)); 
+            if(dens[ind(i,j)] > 0.0){
+
+                // Only calculate if it won't blow up
+                float buoyancy = 1 + (k / dens[ind(i,j)]);
+                v[ind(i,j)] += g / buoyancy;
+            } 
         }
     }
 }
@@ -247,7 +295,8 @@ void SimState::VelocityStep(float dt)
     AddSource(fields.yVel, fields.yVel_prev, dt);
 
     // Perform gravitational acceleration
-    Gravitate(fields.xVel, fields.dens, params.airDens, params.grav, dt);
+    if(params.gravityOn)
+        Gravitate(fields.yVel, fields.dens, params.airDens, params.massRatio, params.grav, dt);
 
     // Perform velocity diffusion
     swap(fields.xVel_prev, fields.xVel);
@@ -274,23 +323,27 @@ void SimState::VelocityStep(float dt)
 SimParams::SimParams()
 {
     // Set to static parameters
+    lengthScale = 1.;
     visc = 0.;
     diff = 0.;
     grav = 0.;
     airDens = 0.;
+    massRatio = 0.;
 
     // Default options
     gravityOn = true;
     solverSteps = 20;
 }
 
-SimParams::SimParams(float viscosity, float diffusion, float gravity, float airDensity)
+SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio)
 {
     // Set input parameters
+    this -> lengthScale = lengthScale;
     this -> visc = viscosity;
     this -> diff = diffusion;
     this -> grav = gravity;
     this -> airDens = airDensity;
+    this -> massRatio = massRatio;
 
     // Default options
     gravityOn = true;
@@ -307,15 +360,15 @@ SimFields::SimFields()
 SimFields::SimFields(int size)
 {
     // Initialize all arrays
-    xVel        = new float[size];
-    yVel        = new float[size];
-    dens        = new float[size];
-    xVel_prev   = new float[size];
-    yVel_prev   = new float[size];
-    dens_prev   = new float[size];
-    xVel_source = new float[size];
-    yVel_source = new float[size];
-    dens_source = new float[size];
+    xVel          = new float[size];
+    yVel          = new float[size];
+    dens          = new float[size];
+    xVel_prev     = new float[size];
+    yVel_prev     = new float[size];
+    dens_prev     = new float[size];
+    xVel_source   = new float[size];
+    yVel_source   = new float[size];
+    dens_source   = new float[size];
 }
 
 

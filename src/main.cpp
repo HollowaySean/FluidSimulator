@@ -29,22 +29,26 @@ int main(int argc, char** argv){
     // Declarations
     float lengthScale = 1.0;
     float visc = 0.00001;
-    float diff = 0.0000001;
+    float diff = 0.000016;
     float grav = -9.8;
     float airDensity = 1.29235;
     float massRatio = 0.5416;
+    float airTemp = 300.0;
+    float diffTemp = 0.0001;
+    float expansionTemp = 0.0;
 
     // Array initializations
     float dens_source[size] = { 0 };
     float u_source[size] = { 0 };
     float v_source[size] = { 0 };
+    float t_source[size] = { airTemp };
 
 
 
     // Initialize state
     SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio);
     SimState testState = SimState(N, params);
-    testState.SetSources(dens_source, u_source, v_source);
+    testState.SetSources(dens_source, u_source, v_source, t_source);
     testState.params.gravityOn = true;
 
     // Set up OpenGL state
@@ -73,6 +77,8 @@ int main(int argc, char** argv){
     float strength = 20.0;
     float angle = 90.0;
     float thickness = 0.1;
+    float temp = 500.0;
+
     int sourceLocation = ind(int(ceil(N/2)), 5, N);
 
 
@@ -87,7 +93,7 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Randomize
-        angle += (static_cast <float> ((rand() % 11) - 5) * 10.0) * timer.DeltaTime();
+        // angle += (static_cast <float> ((rand() % 11) - 5) * 10.0) * timer.DeltaTime();
         // strength += (static_cast <float> ((rand() % 3) - 1) * 0.0) * timer.DeltaTime();
         // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
 
@@ -96,14 +102,16 @@ int main(int argc, char** argv){
             dens_source[sourceLocation] = thickness;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
+            t_source[sourceLocation] = temp;
         }else{
             dens_source[sourceLocation] = 0.0;
             u_source[sourceLocation] = 0.0;
             v_source[sourceLocation] = 0.0;
+            t_source[sourceLocation] = airTemp;
         }
 
         // Update sources
-        testState.SetSources(dens_source, u_source, v_source);
+        testState.SetSources(dens_source, u_source, v_source, t_source);
 
         // Update simulation state
         testState.SimulationStep(timer.DeltaTime());
@@ -122,12 +130,21 @@ int main(int argc, char** argv){
     return 0;
 }
 
-float LerpColor(float input, int channel)
+float LerpColor(float densIn, float tempIn, int channel)
 {
     // Parameters
     float bMod = 500.0;
 
-    float output = bMod * input;
+    float t = (tempIn - 300) / (500 - 300);
+    float output = 0.0;
+
+    switch(channel){
+        case 1:
+            output = bMod * densIn * t;
+            break;
+        case 3:
+            output = bMod * densIn * (1.0 - t);
+    }
 
     return output;
 }
@@ -139,7 +156,8 @@ void DisplayGLWindow(SimState currentState, int cellSize)
     int N = currentState.GetN();
 
     // Get density map
-    float * brightness = currentState.GetDensity();
+    float * density = currentState.GetDensity();
+    float * temperature = currentState.GetTemperature();
 
     // Clear OpenGL window
     glClear(GL_COLOR_BUFFER_BIT);
@@ -150,27 +168,27 @@ void DisplayGLWindow(SimState currentState, int cellSize)
 
             glBegin(GL_QUADS);
 
-            glColor3f(  LerpColor(brightness[ind(x,y,N)], 1), 
-                        LerpColor(brightness[ind(x,y,N)], 2), 
-                        LerpColor(brightness[ind(x,y,N)], 3));
+            glColor3f(  LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)], 1), 
+                        LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  2), 
+                        LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  3));
             glVertex2i( pixelsPerSquare * x,     
                         pixelsPerSquare * y);
 
-            glColor3f(  LerpColor(brightness[ind(x+1,y,N)], 1), 
-                        LerpColor(brightness[ind(x+1,y,N)], 2), 
-                        LerpColor(brightness[ind(x+1,y,N)], 3));
+            glColor3f(  LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  1), 
+                        LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  2), 
+                        LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  3));
             glVertex2i( pixelsPerSquare * (x+1), 
                         pixelsPerSquare * y);
 
-            glColor3f(  LerpColor(brightness[ind(x+1,y+1,N)], 1), 
-                        LerpColor(brightness[ind(x+1,y+1,N)], 2), 
-                        LerpColor(brightness[ind(x+1,y+1,N)], 3));
+            glColor3f(  LerpColor(density[ind(x+1,y+1,N)], temperature[ind(x+1,y+1,N)], 1), 
+                        LerpColor(density[ind(x+1,y+1,N)], temperature[ind(x+1,y+1,N)], 2), 
+                        LerpColor(density[ind(x+1,y+1,N)], temperature[ind(x+1,y+1,N)], 3));
             glVertex2i( pixelsPerSquare * (x+1), 
                         pixelsPerSquare * (y+1));
 
-            glColor3f(  LerpColor(brightness[ind(x,y+1,N)], 1), 
-                        LerpColor(brightness[ind(x,y+1,N)], 2), 
-                        LerpColor(brightness[ind(x,y+1,N)], 3));
+            glColor3f(  LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 1), 
+                        LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 2), 
+                        LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 3));
             glVertex2i( pixelsPerSquare * x,     
                         pixelsPerSquare * (y+1));
 

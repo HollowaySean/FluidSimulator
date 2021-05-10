@@ -26,27 +26,8 @@ SimState::SimState(int N)
     this -> params = SimParams();
     this -> fields = SimFields(size);
 
-    // Initialize arrays to 0
-    SetConstantSource(fields.dens, 0.0);
-    SetConstantSource(fields.xVel, 0.0);
-    SetConstantSource(fields.yVel, 0.0);
-}
-
-// Constructor with physical properties
-SimState::SimState(int N, float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio)
-{
-    // Property initializations
-    this -> N = N;
-    this -> size = (N + 2) * (N + 2);
-
-    // Struct initializations
-    this -> params = SimParams(lengthScale, viscosity, diffusion, gravity, airDensity, massRatio);
-    this -> fields = SimFields(size);
-
-    // Initialize arrays to 0
-    SetConstantSource(fields.dens, 0.0);
-    SetConstantSource(fields.xVel, 0.0);
-    SetConstantSource(fields.yVel, 0.0);
+    // Zero out all arrays
+    ZeroArrays();
 }
 
 // Constructor taking param struct
@@ -60,20 +41,19 @@ SimState::SimState(int N, SimParams paramsIn)
     this -> params = paramsIn;
     this -> fields = SimFields(size);
 
-    // Initialize arrays to 0
-    SetConstantSource(fields.dens, 0.0);
-    SetConstantSource(fields.xVel, 0.0);
-    SetConstantSource(fields.yVel, 0.0);
+    // Zero out all arrays
+    ZeroArrays();
 }
 
 
 // Set pointers to density and velocity sources
-void SimState::SetSources(float * density, float * xVelocity, float * yVelocity)
+void SimState::SetSources(float * density, float * xVelocity, float * yVelocity, float * temperature)
 {
     // Pass into struct
     fields.dens_source = density;
     fields.xVel_source = xVelocity;
     fields.yVel_source = yVelocity;
+    fields.temp_source = temperature;
 }
 
 // Run simulation step
@@ -87,18 +67,39 @@ void SimState::SimulationStep(float timeStep)
     // Start futher simulation steps
     VelocityStep(timeStep);
     DensityStep(timeStep);
+    if(params.temperatureOn)
+        TemperatureStep(timeStep);
 }
 
 // Property accessors
 float * SimState::GetDensity() { return fields.dens; }
 float * SimState::GetXVelocity() { return fields.xVel; }
 float * SimState::GetYVelocity() { return fields.yVel; }
+float * SimState::GetTemperature() { return fields.temp; }
 int SimState::GetN() { return N; }
 int SimState::GetSize() { return size; }
 
 
 
 //// SIMSTATE PRIVATE METHODS ////
+
+// Set all arrays to zero
+void SimState::ZeroArrays()
+{
+    // Initialize arrays to 0
+    SetConstantSource(fields.dens, 0.0);
+    SetConstantSource(fields.xVel, 0.0);
+    SetConstantSource(fields.yVel, 0.0);
+    SetConstantSource(fields.temp, 0.0);
+    SetConstantSource(fields.dens_prev, 0.0);
+    SetConstantSource(fields.xVel_prev, 0.0);
+    SetConstantSource(fields.yVel_prev, 0.0);
+    SetConstantSource(fields.temp_prev, 0.0);
+    SetConstantSource(fields.dens_source, 0.0);
+    SetConstantSource(fields.xVel_source, 0.0);
+    SetConstantSource(fields.yVel_source, 0.0);
+    SetConstantSource(fields.temp_source, 0.0);
+}
 
 // Set array values to those of other array
 void SimState::SetSource(float * x, float * x_set)
@@ -317,9 +318,22 @@ void SimState::VelocityStep(float dt)
     HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
 }
 
+// Collected methods for temperature calculation
+void SimState::TemperatureStep(float dt)
+{
+    // Generate sources
+    AddSource(fields.temp, fields.temp_prev, dt);
+    swap(fields.temp_prev, fields.temp);
+    Diffuse(0, fields.temp, fields.temp_prev, params.diffTemp, dt);
+    swap(fields.temp_prev, fields.temp);
+    Advect(0, fields.temp, fields.temp_prev, fields.xVel, fields.yVel, dt);
+}
+
 
 
 /// STRUCT CONSTRUCTORS ///
+
+// Bare constructor
 SimParams::SimParams()
 {
     // Set to static parameters
@@ -335,6 +349,22 @@ SimParams::SimParams()
     solverSteps = 20;
 }
 
+// Constructor for simple advection/diffusion simulation
+SimParams::SimParams(float lengthScale, float viscosity, float diffusion)
+{
+    // Set input parameters
+    this -> lengthScale = lengthScale;
+    this -> visc = viscosity;
+    this -> diff = diffusion;
+
+    // Default options
+    gravityOn = false;
+    temperatureOn = false;
+    solverSteps = 20;
+
+}
+
+// Constructor for buoyant simulation
 SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio)
 {
     // Set input parameters
@@ -347,6 +377,28 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
 
     // Default options
     gravityOn = true;
+    temperatureOn = false;
+    solverSteps = 20;
+
+}
+
+// Constructor for full thermal simulation
+SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio, float airTemp, float diffTemp, float expansionTemp)
+{
+    // Set input parameters
+    this -> lengthScale = lengthScale;
+    this -> visc = viscosity;
+    this -> diff = diffusion;
+    this -> grav = gravity;
+    this -> airDens = airDensity;
+    this -> massRatio = massRatio;
+    this -> airTemp = airTemp;
+    this -> diffTemp = diffTemp;
+    this -> expansionTemp = expansionTemp;
+
+    // Default options
+    gravityOn = true;
+    temperatureOn = true;
     solverSteps = 20;
 
 }

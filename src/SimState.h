@@ -7,10 +7,16 @@ struct SimParams
 {
     // Constructors
     SimParams();
-    SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio);
+    SimParams(float lengthScale, float viscosity, float diffusion);
+    SimParams(float lengthScale, float viscosity, float diffusion, 
+                float gravity, float airDensity, float massRatio);
+    SimParams(float lengthScale, float viscosity, float diffusion, 
+                float gravity, float airDensity, float massRatio, 
+                float airTemp, float diffTemp, float expansionTemp);
 
     // Options
     bool gravityOn;
+    bool temperatureOn;
     int solverSteps;
 
     // Physical constants
@@ -20,6 +26,9 @@ struct SimParams
     float grav;
     float airDens;
     float massRatio;
+    float airTemp;
+    float diffTemp;
+    float expansionTemp;
 };
 
 // Structure to hold onto array pointers
@@ -33,16 +42,19 @@ struct SimFields
     float * xVel;
     float * yVel;
     float * dens;
+    float * temp;
 
     // Previous grid
     float * xVel_prev;
     float * yVel_prev;
     float * dens_prev;
+    float * temp_prev;
 
     // Source grid
     float * xVel_source;
     float * yVel_source;
     float * dens_source;
+    float * temp_source;
 };
 
 
@@ -53,17 +65,17 @@ class SimState
 
         // Constructors
         SimState(int N);
-        SimState(int N, float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio);
         SimState(int N, SimParams params);
 
         // Public methods
-        void SetSources(float * density, float * xVelocity, float * yVelocity);
+        void SetSources(float * density, float * xVelocity, float * yVelocity, float * temperature);
         void SimulationStep(float timeStep);
 
         // Array accessors
         float * GetDensity();
         float * GetXVelocity();
         float * GetYVelocity();
+        float * GetTemperature();
 
         // Grid size accessors
         int GetN();
@@ -79,6 +91,7 @@ class SimState
         int size;
 
         // Internal Methods
+        void ZeroArrays();
         void SetSource(float *, float *);
         void SetConstantSource(float *, float);
         void AddSource(float *, float *, float);
@@ -93,6 +106,7 @@ class SimState
 
         void DensityStep(float);
         void VelocityStep(float);
+        void TemperatureStep(float);
 
         // Array struct
         SimFields fields;

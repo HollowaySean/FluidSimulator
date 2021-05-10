@@ -123,12 +123,21 @@ int main(int argc, char** argv){
     return 0;
 }
 
+float LerpColor(float input, int channel)
+{
+    // Parameters
+    float bMod = 5.0;
+
+    float output = bMod * input;
+
+    return output;
+}
+
 void DisplayGLWindow(SimState currentState, int cellSize)
 {
     // Set properties
     int pixelsPerSquare = cellSize;
     int N = currentState.GetN();
-    float bMod = 1.0;
 
     // Get density map
     float * brightness = currentState.GetDensity();
@@ -142,27 +151,27 @@ void DisplayGLWindow(SimState currentState, int cellSize)
 
             glBegin(GL_QUADS);
 
-            glColor3f(  bMod * brightness[ind(x,y,N)], 
-                        bMod * brightness[ind(x,y,N)], 
-                        bMod * brightness[ind(x,y,N)]);
+            glColor3f(  LerpColor(brightness[ind(x,y,N)], 1), 
+                        LerpColor(brightness[ind(x,y,N)], 2), 
+                        LerpColor(brightness[ind(x,y,N)], 3));
             glVertex2i( pixelsPerSquare * x,     
                         pixelsPerSquare * y);
 
-            glColor3f(  bMod * brightness[ind(x+1,y,N)], 
-                        bMod * brightness[ind(x+1,y,N)], 
-                        bMod * brightness[ind(x+1,y,N)]);
+            glColor3f(  LerpColor(brightness[ind(x+1,y,N)], 1), 
+                        LerpColor(brightness[ind(x+1,y,N)], 2), 
+                        LerpColor(brightness[ind(x+1,y,N)], 3));
             glVertex2i( pixelsPerSquare * (x+1), 
                         pixelsPerSquare * y);
 
-            glColor3f(  bMod * brightness[ind(x+1,y+1,N)], 
-                        bMod * brightness[ind(x+1,y+1,N)], 
-                        bMod * brightness[ind(x+1,y+1,N)]);
+            glColor3f(  LerpColor(brightness[ind(x+1,y+1,N)], 1), 
+                        LerpColor(brightness[ind(x+1,y+1,N)], 2), 
+                        LerpColor(brightness[ind(x+1,y+1,N)], 3));
             glVertex2i( pixelsPerSquare * (x+1), 
                         pixelsPerSquare * (y+1));
 
-            glColor3f(  bMod * brightness[ind(x,y+1,N)], 
-                        bMod * brightness[ind(x,y+1,N)], 
-                        bMod * brightness[ind(x,y+1,N)]);
+            glColor3f(  LerpColor(brightness[ind(x,y+1,N)], 1), 
+                        LerpColor(brightness[ind(x,y+1,N)], 2), 
+                        LerpColor(brightness[ind(x,y+1,N)], 3));
             glVertex2i( pixelsPerSquare * x,     
                         pixelsPerSquare * (y+1));
 

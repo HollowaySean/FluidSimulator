@@ -13,7 +13,7 @@ using namespace std;
 
 
 
-//// PUBLIC METHODS ////
+//// SIMSTATE PUBLIC METHODS ////
 
 // Constructor without physical properties
 SimState::SimState(int N)
@@ -22,89 +22,68 @@ SimState::SimState(int N)
     this -> N = N;
     this -> size = (N + 2) * (N + 2);
 
-    // Array initializations
-    u           = new float[size];
-    v           = new float[size];
-    dens        = new float[size];
-    u_prev      = new float[size];
-    v_prev      = new float[size];
-    dens_prev   = new float[size];
-    u_source    = new float[size];
-    v_source    = new float[size];
-    dens_source = new float[size];
+    // Struct initializations
+    this -> params = SimParams();
+    this -> fields = SimFields(N);
 }
 
 // Constructor with physical properties
-SimState::SimState(int N, float visc, float diff, float grav, float airDensity)
+SimState::SimState(int N, float viscosity, float diffusion, float gravity, float airDensity)
 {
     // Property initializations
     this -> N = N;
     this -> size = (N + 2) * (N + 2);
-    this -> visc = visc;
-    this -> diff = diff;
-    this -> grav = grav;
-    this -> airDensity = airDensity;
 
-    // Array initializations
-    u           = new float[size];
-    v           = new float[size];
-    dens        = new float[size];
-    u_prev      = new float[size];
-    v_prev      = new float[size];
-    dens_prev   = new float[size];
-    u_source    = new float[size];
-    v_source    = new float[size];
-    dens_source = new float[size];
+    // Struct initializations
+    this -> params = SimParams(viscosity, diffusion, gravity, airDensity);
+    this -> fields = SimFields(N);
 }
 
 // Set pointers to density and velocity sources
-void SimState::SetSources(float * densitySource, float * uSource, float * vSource)
+void SimState::SetSources(float * density, float * xVelocity, float * yVelocity)
 {
-    this -> dens_source = densitySource;
-    this -> u_source = uSource;
-    this -> v_source = vSource;
+    // Pass into struct
+    fields.dens_source = density;
+    fields.xVel_source = xVelocity;
+    fields.yVel_source = yVelocity;
 }
 
 // Run simulation step
 void SimState::SimulationStep(float timeStep)
 {
     // Set sources as input
-    SetSource(N, dens_prev, dens_source);
-    SetSource(N, u_prev,    u_source);
-    SetSource(N, v_prev,    v_source);
+    SetSource(fields.dens_prev, fields.dens_source);
+    SetSource(fields.xVel_prev, fields.xVel_source);
+    SetSource(fields.yVel_prev, fields.yVel_source);
 
     // Start futher simulation steps
-    VelocityStep(N, u, v, u_prev, v_prev, dens, airDensity, visc, grav, timeStep);
-    DensityStep(N, dens, dens_prev, u, v, diff, timeStep);
+    VelocityStep(timeStep);
+    DensityStep(timeStep);
 }
 
 // Property accessors
-float * SimState::GetDensity() { return dens; }
-float * SimState::GetUVelocity() { return u; }
-float * SimState::GetVVelocity() { return v; }
+float * SimState::GetDensity() { return fields.dens; }
+float * SimState::GetXVelocity() { return fields.xVel; }
+float * SimState::GetYVelocity() { return fields.yVel; }
 int SimState::GetN() { return N; }
 int SimState::GetSize() { return size; }
 
 
 
-//// PRIVATE METHODS ////
+//// SIMSTATE PRIVATE METHODS ////
 
 // Set array values to those of other array
-void SimState::SetSource(int N, float * x, float * x_set)
+void SimState::SetSource(float * x, float * x_set)
 {
     // Set array values at each cell
-    for(int i = 0; i <= N+1; i++){
-        for(int j = 0; j <= N+1; j++){
-            x[ind(i,j)] = x_set[ind(i,j)];
-        }
+    for(int i = 0; i < size; i++){
+        x[i] = x_set[i];
     }
 }
 
 // Add source values into array values
-void SimState::AddSource(int N, float * x, float * s, float dt)
+void SimState::AddSource(float * x, float * s, float dt)
 {
-    int size = (N+2) * (N+2);
-
     // Loop through grid elements
     for(int i = 0; i < size; i++){
         x[i] += dt * s[i];
@@ -112,10 +91,8 @@ void SimState::AddSource(int N, float * x, float * s, float dt)
 }
 
 // Add constant source value into array values
-void SimState::AddConstantSource(int N, float * x, float s, float dt)
+void SimState::AddConstantSource(float * x, float s, float dt)
 {
-    int size = (N+2) * (N+2);
-
     // Loop through grid elements
     for(int i = 0; i < size; i++){
         x[i] += dt * s;
@@ -123,7 +100,7 @@ void SimState::AddConstantSource(int N, float * x, float s, float dt)
 }
 
 // Evaluate boundary conditions
-void SimState::SetBoundary(int N, int b, float * x)
+void SimState::SetBoundary(int b, float * x)
 {
     for(int i = 1; i <= N; i++){
         x[ind(0,  i)] = (b == 1) ? -x[ind(1,i)] : x[ind(1,i)];
@@ -138,49 +115,50 @@ void SimState::SetBoundary(int N, int b, float * x)
 }
 
 // Perform diffusion step
-void SimState::Diffuse(int N, int b, float * x, float * x0, float diff, float dt)
+void SimState::Diffuse(int b, float * x, float * x0, float diff, float dt)
 {
-    int i, j, k;
+    // Adjust a to account for cell size
+    // TODO:ADJUST
     float a = dt * diff * N * N;
 
     // Loop through Gauss-Seidel relaxation steps
-    for(k = 0; k < 20; k++){
+    for(int k = 0; k < 20; k++){
 
         // Loop through grid elements
-        for(i = 1; i <= N; i++){
-            for(j = 1; j <= N; j++){
+        for(int i = 1; i <= N; i++){
+            for(int j = 1; j <= N; j++){
 
                 // Diffusion step
                 x[ind(i,j)] = (x0[ind(i,j)] + 
                 a*(x[ind(i-1,j)] + x[ind(i+1,j)] + x[ind(i,j-1)] + x[ind(i,j+1)])) / (1 + 4*a);
             }
         }
-        SetBoundary(N, b, x);
+        SetBoundary(b, x);
     }
 }
 
 // Perform advection step
-void SimState::Advect(int N, int b, float * d, float * d0, float * u, float * v, float dt)
+void SimState::Advect(int b, float * d, float * d0, float * u, float * v, float dt)
 {
-    int i, j, i0, j0, i1, j1;
+    int i0, j0, i1, j1;
     float x, y, s0, t0, s1, t1;
     float dt0 = dt * N;
 
     // Loop through grid elements
-    for(i = 1; i <= N; i++){
-        for(j = 1; j <= N; j++){
+    for(int i = 1; i <= N; i++){
+        for(int j = 1; j <= N; j++){
 
             // Calculate origin coordinates
             x = i - dt0 * u[ind(i,j)];
             y = j - dt0 * v[ind(i,j)];
 
             // Discretize into adjacent grid elements
-            if(x < 0.5    ) { x = 0.5;     }
+            if(x <     0.5) { x =     0.5; }
             if(x > N + 0.5) { x = N + 0.5; }
             i0 = (int)x;
             i1 = i0 + 1;
 
-            if(y < 0.5    ) { y = 0.5;     }
+            if(y <     0.5) { y =     0.5; }
             if(y > N + 0.5) { y = N + 0.5; }
             j0 = (int)y;
             j1 = j0 + 1;
@@ -195,56 +173,54 @@ void SimState::Advect(int N, int b, float * d, float * d0, float * u, float * v,
                           s1 * (t0 * d0[ind(i1,j0)] + t1 * d0[ind(i1,j1)]);
         }
     }
-    SetBoundary(N, b, d);
+    SetBoundary(b, d);
 }
 
 // Perform Hodge Projection for advection
-void SimState::HodgeProjection(int N, float * u, float * v, float * p, float * div)
+void SimState::HodgeProjection(float * u, float * v, float * p, float * div)
 {
-    int i, j, k;
     float h = 1.0/N;
 
     // Calculate divergence in each grid element 
-    for(i = 1; i <= N; i++){
-        for(j = 1; j <= N; j++){
+    for(int i = 1; i <= N; i++){
+        for(int j = 1; j <= N; j++){
             div[ind(i,j)] = -0.5 * h * (u[ind(i+1,j)]-u[ind(i-1,j)]+
                                         v[ind(i,j+1)]-v[ind(i,j-1)]);
             p[ind(i,j)] = 0;
         }
     }
-    SetBoundary(N, 0, div);
-    SetBoundary(N, 0, p);
+    SetBoundary(0, div);
+    SetBoundary(0, p);
 
     // Gauss-Seidel relaxation for divergence
-    for(k = 0; k < 20; k++){
-        for(i = 1; i <= N; i++){
-            for(j = 1; j <= N; j++){
+    for(int k = 0; k < 20; k++){
+        for(int i = 1; i <= N; i++){
+            for(int j = 1; j <= N; j++){
                 p[ind(i,j)] = (div[ind(i,j)] + p[ind(i-1,j)] + p[ind(i+1,j)] +
                                                p[ind(i,j-1)] + p[ind(i,j+1)])/4;
             }
         }
-        SetBoundary(N, 0, p);
+        SetBoundary(0, p);
     }
 
     // Calculate divergence-free Hodge projection in each grid element 
-    for(i = 1; i <= N; i++){
-        for(j = 1; j <= N; j++){
+    for(int i = 1; i <= N; i++){
+        for(int j = 1; j <= N; j++){
             u[ind(i,j)] -= 0.5 * (p[ind(i+1,j)] - p[ind(i-1,j)])/h;
             v[ind(i,j)] -= 0.5 * (p[ind(i,j+1)] - p[ind(i,j-1)])/h;
         }
     }
-    SetBoundary(N, 1, u);
-    SetBoundary(N, 2, v);
+    SetBoundary(1, u);
+    SetBoundary(2, v);
 }
 
-void SimState::Gravitate(int N, float * v, float * dens, float adens, float grav, float dt)
+void SimState::Gravitate(float * v, float * dens, float adens, float grav, float dt)
 {
-    int i, j;
     float g = dt * grav;
 
     // Loop through grid elements
-    for(i = 1; i <= N; i++){
-        for(j = 1; j <= N; j++){
+    for(int i = 1; i <= N; i++){
+        for(int j = 1; j <= N; j++){
 
             // Gravitation and buoyancy
             v[ind(i,j)] += g * (dens[ind(i,j)] / (dens[ind(i,j)] + adens)); 
@@ -253,41 +229,93 @@ void SimState::Gravitate(int N, float * v, float * dens, float adens, float grav
 }
 
 // Collected methods for density calculation
-void SimState::DensityStep(int N, float * x, float * x0, float * u, float * v, float diff, float dt)
+void SimState::DensityStep(float dt)
 {
     // Perform source, diffusion, and advection steps
-    AddSource(N, x, x0, dt);
-    swap(x0, x); Diffuse(N, 0, x, x0, diff, dt);
-    swap(x0, x); Advect(N, 0, x, x0, u, v, dt);
+    AddSource(fields.dens, fields.dens_prev, dt);
+    swap(fields.dens_prev, fields.dens); 
+    Diffuse(0, fields.dens, fields.dens_prev, params.diff, dt);
+    swap(fields.dens_prev, fields.dens); 
+    Advect(0, fields.dens, fields.dens_prev, fields.xVel, fields.yVel, dt);
 }
 
 // Collected methods for velocity calculation
-void SimState::VelocityStep(int N, float * u, float * v, float * u0, float * v0, float * dens, float adens, float visc, float grav, float dt)
+void SimState::VelocityStep(float dt)
 {
     // Generate sources
-    AddSource(N, u, u0, dt);
-    AddSource(N, v, v0, dt);
+    AddSource(fields.xVel, fields.xVel_prev, dt);
+    AddSource(fields.yVel, fields.yVel_prev, dt);
 
     // Perform gravitational acceleration
-    Gravitate(N, v, dens, adens, grav, dt);
+    Gravitate(fields.xVel, fields.dens, params.airDens, params.grav, dt);
 
     // Perform velocity diffusion
-    swap(u0, u);
-    Diffuse(N, 1, u, u0, visc, dt);
-    swap(v0, v);
-    Diffuse(N, 2, v, v0, visc, dt);
+    swap(fields.xVel_prev, fields.xVel);
+    Diffuse(1, fields.xVel, fields.xVel_prev, params.visc, dt);
+    swap(fields.yVel_prev, fields.yVel);
+    Diffuse(2, fields.yVel, fields.yVel_prev, params.visc, dt);
 
     // Perform Hodge projection to remove divergence
-    HodgeProjection(N, u, v, u0, v0);
+    HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
 
     // Perform velocity advection
-    swap(u0, u);
-    swap(v0, v);
-    Advect(N, 1, u, u0, u0, v0, dt);
-    Advect(N, 2, v, v0, u0, v0, dt);
+    swap(fields.xVel_prev, fields.xVel);
+    swap(fields.yVel_prev, fields.yVel);
+    Advect(1, fields.xVel, fields.xVel_prev, fields.xVel_prev, fields.yVel_prev, dt);
+    Advect(2, fields.yVel, fields.yVel_prev, fields.xVel_prev, fields.yVel_prev, dt);
 
     // Perform Hodge projection again
-    HodgeProjection(N, u, v, u0, v0);
+    HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
+}
+
+
+
+/// STRUCT CONSTRUCTORS ///
+SimParams::SimParams()
+{
+    // Set to static parameters
+    visc = 0.;
+    diff = 0.;
+    grav = 0.;
+    airDens = 0.;
+
+    // Default options
+    gravityOn = true;
+    solverSteps = 20;
+}
+
+SimParams::SimParams(float viscosity, float diffusion, float gravity, float airDensity)
+{
+    // Set input parameters
+    this -> visc = viscosity;
+    this -> diff = diffusion;
+    this -> grav = gravity;
+    this -> airDens = airDensity;
+
+    // Default options
+    gravityOn = true;
+    solverSteps = 20;
+
+}
+
+SimFields::SimFields()
+{
+    // Default to 10 x 10 grid
+    SimFields(100);
+}
+
+SimFields::SimFields(int size)
+{
+    // Initialize all arrays
+    xVel        = new float[size];
+    yVel        = new float[size];
+    dens        = new float[size];
+    xVel_prev   = new float[size];
+    yVel_prev   = new float[size];
+    dens_prev   = new float[size];
+    xVel_source = new float[size];
+    yVel_source = new float[size];
+    dens_source = new float[size];
 }
 
 

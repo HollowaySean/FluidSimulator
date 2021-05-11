@@ -5,6 +5,7 @@
 
 // Includes and usings
 #include <iostream>
+#include <cmath>
 using namespace std;
 
 // Macros
@@ -176,6 +177,41 @@ void SimState::Diffuse(int b, float * x, float * x0, float diff, float dt)
     }
 }
 
+// Perform diffusion step for stream vectors
+void SimState::DiffuseMomentum(int b, float * x, float * x0, float * dens, float * temp, float aTemp, float diff, float dt)
+{
+    // Adjust a to account for cell size and timestep
+    float cellSize = params.lengthScale / N;
+    float a = dt * diff / (cellSize * cellSize);
+
+    // Loop through Gauss-Seidel relaxation steps
+    for(int k = 0; k < params.solverSteps; k++){
+
+        // Loop through grid elements
+        for(int i = 1; i <= N; i++){
+            for(int j = 1; j <= N; j++){
+
+                // Adjust for temperature and density
+                float a_t;
+                if(params.temperatureOn){
+                    float tFactor = aTemp / (aTemp + (temp[ind(i,j)] - aTemp) / ((params.airDens / dens[ind(i,j)]) + params.massRatio - 1));
+                    // Sqrt dependence on temperature, but with room temperature density assumption
+                    a_t = a * sqrt(temp[ind(i,j)] / aTemp) / (tFactor * (params.airDens + dens[ind(i,j)] * (1.0 - params.massRatio)));
+                }else if(params.gravityOn){
+                    a_t = a / dens[ind(i,j)];
+                }else{
+                    a_t = a;
+                }
+
+                // Diffusion step
+                x[ind(i,j)] = (x0[ind(i,j)] + 
+                a_t*(x[ind(i-1,j)] + x[ind(i+1,j)] + x[ind(i,j-1)] + x[ind(i,j+1)])) / (1 + 4*a_t);
+            }
+        }
+        SetBoundary(b, x);
+    }
+}
+
 // Dissipate density
 void SimState::Dissipate(float * x, float eqVal, float rate, float dt)
 {
@@ -308,8 +344,7 @@ void SimState::Convect(float * v, float * dens, float * temp, float adens, float
             // Calculate thermal buoyancy values
             float densRatio = dens[ind(i,j)] / adens;
             float deltaT = temp[ind(i,j)] - aTemp;
-            float tMix = aTemp + (deltaT / ((adens / dens[ind(i,j)]) - massRatio));
-            float t = 1.0 - (tMix / aTemp);
+            float t = -1.0 * (deltaT / aTemp) / ((adens / dens[ind(i,j)]) - k);
 
             // Calculate buoyant force
             float bForce = (t + (k * densRatio)) / (1.0 + (k * densRatio));
@@ -332,7 +367,7 @@ void SimState::DensityStep(float dt)
     swap(fields.dens_prev, fields.dens); 
 
     // Dissipate smoke
-    Dissipate(fields.dens, 0.0, 100.0, dt);
+    // Dissipate(fields.dens, 0.0, 1.0, dt);
 
     // Advect along streamlines
     Advect(0, fields.dens, fields.dens_prev, fields.xVel, fields.yVel, dt);
@@ -357,9 +392,11 @@ void SimState::VelocityStep(float dt)
 
     // Perform velocity diffusion
     swap(fields.xVel_prev, fields.xVel);
-    Diffuse(1, fields.xVel, fields.xVel_prev, params.visc, dt);
+    // Diffuse(1, fields.xVel, fields.xVel_prev, params.visc, dt);
+    DiffuseMomentum(1, fields.xVel, fields.xVel_prev, fields.dens, fields.temp, params.airTemp, params.diff, dt);
     swap(fields.yVel_prev, fields.yVel);
-    Diffuse(2, fields.yVel, fields.yVel_prev, params.visc, dt);
+    // Diffuse(2, fields.yVel, fields.yVel_prev, params.visc, dt);
+    DiffuseMomentum(1, fields.yVel, fields.yVel_prev, fields.dens, fields.temp, params.airTemp, params.diff, dt);
 
     // Perform Hodge projection to remove divergence
     HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
@@ -386,7 +423,7 @@ void SimState::TemperatureStep(float dt)
     swap(fields.temp_prev, fields.temp);
 
     // Perform cooling due to surrounding air
-    Dissipate(fields.temp, params.diffTemp, params.airTemp, dt);
+    // Dissipate(fields.temp, params.diffTemp, params.airTemp, dt);
 
     // Advect along streamlines
     Advect(0, fields.temp, fields.temp_prev, fields.xVel, fields.yVel, dt);
@@ -487,6 +524,19 @@ SimFields::SimFields(int size)
     yVel_source   = new float[size];
     dens_source   = new float[size];
     temp_source   = new float[size];
+
+    // float xVel[size] = { 0 };
+    // float yVel[size] = { 0 };
+    // float dens[size] = { 0 };
+    // float temp[size] = { 0 };
+    // float xVel_prev[size] = { 0 };
+    // float yVel_prev[size] = { 0 };
+    // float dens_prev[size] = { 0 };
+    // float temp_prev[size] = { 0 };
+    // float xVel_source[size] = { 0 };
+    // float yVel_source[size] = { 0 };
+    // float dens_source[size] = { 0 };
+    // float temp_source[size] = { 0 };
 }
 
 

@@ -20,6 +20,7 @@ SimTimer::SimTimer(int maxFrameRate)
     frameCounter = 0;
     totalFrameCounter = 0;
     frameTime = 1000.0 / float(maxFrameRate);
+    timeStep = float(frameTime) / 1000.0;
 }
 
 // Start simulation timer

@@ -97,6 +97,7 @@ class SimState
         void AddConstantSource(float *, float, float);
 
         void Diffuse(int, float *, float *, float, float);
+        void DiffuseMomentum(int, float *, float *, float *, float *, float, float, float);
         void Dissipate(float *, float, float, float);
         void Advect(int, float *, float *, float *, float *, float);
         void Gravitate(float *, float *, float, float, float, float);

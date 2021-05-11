@@ -24,18 +24,18 @@ int main(int argc, char** argv){
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
-    int maxFrameRate = 60;
+    int maxFrameRate = 25;
 
     // Declarations
-    float lengthScale = 1.0;
-    float visc = 0.000001;
-    float diff = 0.000016;
-    float grav = -9.8;
-    float airDensity = 1.29235;
-    // float massRatio = 0.5416;
-    float massRatio = 2.;
-    float airTemp = 300.0;
-    float diffTemp = 0.00001;
+    float lengthScale = 1.0;        // Side length of the box
+    float visc = 0.000018;          // Dynamic viscosity at air temperature
+    float diff = 0.000016;          // Diffusion constant at air temperature
+    float grav = -9.8;              // Gravitational force
+    float airDensity = 1.29235;     // Density of background air
+    float massRatio = 0.5416;       // Ratio of molar mass of air / molar mass of gas
+    // float massRatio = 2.;           // Ratio of molar mass of air / molar mass of gas
+    float airTemp = 300.0;          // Temperature of background air
+    float diffTemp = 0.00001;       // Thermal diffusivity of gas
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -75,12 +75,12 @@ int main(int argc, char** argv){
     timer.StartSimulation();
 
     // Set up source
-    float strength = 0.0;
-    float angle = 90.0;
-    float thickness = 1.0;
-    float temp = 1000.0;
+    float strength = 1.0;
+    float angle = 80.0;
+    float thickness = 0.1;
+    float temp = 2000.0;
 
-    int sourceLocation = ind(int(ceil(N/2)) + 3, 10, N);
+    int sourceLocation = ind(int(ceil(N/2)), 10, N);
 
 
 
@@ -99,7 +99,7 @@ int main(int argc, char** argv){
         // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds
-        if(timer.RunTime() < 20000){
+        if(timer.RunTime() < 60000){
             dens_source[sourceLocation] = thickness;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);

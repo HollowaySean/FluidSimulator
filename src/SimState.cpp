@@ -81,6 +81,47 @@ float * SimState::GetTemperature() { return fields.temp; }
 int SimState::GetN() { return N; }
 int SimState::GetSize() { return size; }
 
+// Density field of mixed fluid at background temperature
+float SimState::MixedDensityAtAirTemp(int ind)
+{
+    return params.airDens + fields.dens[ind] * (1.0 - params.massRatio);
+}
+
+// Temperature field of mixed fluid
+float SimState::MixedTemperature(int ind)
+{
+    return params.airTemp + (fields.temp[ind] - params.airTemp) * (fields.dens[ind] / MixedDensityAtAirTemp(ind));
+}
+
+// Density field of mixed fluid at temperature
+float SimState::MixedDensity(int ind)
+{
+    return MixedDensityAtAirTemp(ind) * (params.airTemp / MixedTemperature(ind));
+}
+
+// Mass diffusivity adjusted for temperature
+float SimState::AdjustedMassDiffusivity(int ind)
+{
+    // NOTE: should temp be adjusted for density?
+    return params.diff * sqrt(fields.temp[ind] / params.airTemp) * (fields.temp[ind] / params.airTemp);
+    // return params.diff;
+}
+
+// Viscosity adjusted for temperature
+float SimState::AdjustedViscosity(int ind)
+{
+    // NOTE: should density be adjusted for temperature?
+    return params.visc * sqrt(MixedTemperature(ind) / params.airTemp) / MixedDensityAtAirTemp(ind);
+    // return params.visc;
+}
+
+// Thermal diffusivity adjusted for temperature
+float SimState::AdjustedThermalDiffusivity(int ind)
+{
+    // NOTE: should temperature be adjusted for density?
+    return params.diffTemp * sqrt(fields.temp[ind] / params.airTemp);
+    // return params.diffTemp;
+}
 
 
 //// SIMSTATE PRIVATE METHODS ////
@@ -159,30 +200,7 @@ void SimState::Diffuse(int b, float * x, float * x0, float diff, float dt)
 {
     // Adjust a to account for cell size and timestep
     float cellSize = params.lengthScale / N;
-    float a = dt * diff / (cellSize * cellSize);
-
-    // Loop through Gauss-Seidel relaxation steps
-    for(int k = 0; k < params.solverSteps; k++){
-
-        // Loop through grid elements
-        for(int i = 1; i <= N; i++){
-            for(int j = 1; j <= N; j++){
-
-                // Diffusion step
-                x[ind(i,j)] = (x0[ind(i,j)] + 
-                a*(x[ind(i-1,j)] + x[ind(i+1,j)] + x[ind(i,j-1)] + x[ind(i,j+1)])) / (1 + 4*a);
-            }
-        }
-        SetBoundary(b, x);
-    }
-}
-
-// Perform diffusion step for stream vectors
-void SimState::DiffuseMomentum(int b, float * x, float * x0, float * dens, float * temp, float aTemp, float diff, float dt)
-{
-    // Adjust a to account for cell size and timestep
-    float cellSize = params.lengthScale / N;
-    float a = dt * diff / (cellSize * cellSize);
+    float a = dt / (cellSize * cellSize);
 
     // Loop through Gauss-Seidel relaxation steps
     for(int k = 0; k < params.solverSteps; k++){
@@ -194,13 +212,71 @@ void SimState::DiffuseMomentum(int b, float * x, float * x0, float * dens, float
                 // Adjust for temperature and density
                 float a_t;
                 if(params.temperatureOn){
-                    float tFactor = aTemp / (aTemp + (temp[ind(i,j)] - aTemp) / ((params.airDens / dens[ind(i,j)]) + params.massRatio - 1));
-                    // Sqrt dependence on temperature, but with room temperature density assumption
-                    a_t = a * sqrt(temp[ind(i,j)] / aTemp) / (tFactor * (params.airDens + dens[ind(i,j)] * (1.0 - params.massRatio)));
-                }else if(params.gravityOn){
-                    a_t = a / dens[ind(i,j)];
+                    a_t = a * AdjustedMassDiffusivity(ind(i, j));
                 }else{
-                    a_t = a;
+                    a_t = a * params.diff;
+                }
+
+                // Diffusion step
+                x[ind(i,j)] = (x0[ind(i,j)] + 
+                a_t*(x[ind(i-1,j)] + x[ind(i+1,j)] + x[ind(i,j-1)] + x[ind(i,j+1)])) / (1 + 4*a_t);
+            }
+        }
+        SetBoundary(b, x);
+    }
+}
+
+// Perform diffusion step for thermal field
+void SimState::DiffuseHeat(int b, float * x, float * x0, float diff, float dt)
+{
+    // Adjust a to account for cell size and timestep
+    float cellSize = params.lengthScale / N;
+    float a = dt / (cellSize * cellSize);
+
+    // Loop through Gauss-Seidel relaxation steps
+    for(int k = 0; k < params.solverSteps; k++){
+
+        // Loop through grid elements
+        for(int i = 1; i <= N; i++){
+            for(int j = 1; j <= N; j++){
+
+                // Adjust for temperature and density
+                float a_t;
+                if(params.temperatureOn){
+                    a_t = a * AdjustedThermalDiffusivity(ind(i, j));
+                }else{
+                    a_t = a * params.diffTemp;
+                }
+
+                // Diffusion step
+                x[ind(i,j)] = (x0[ind(i,j)] + 
+                a_t*(x[ind(i-1,j)] + x[ind(i+1,j)] + x[ind(i,j-1)] + x[ind(i,j+1)])) / (1 + 4*a_t);
+            }
+        }
+        SetBoundary(b, x);
+    }
+}
+
+// Perform diffusion step for stream vectors
+void SimState::DiffuseMomentum(int b, float * x, float * x0, float dt)
+{
+    // Adjust a to account for cell size and timestep
+    float cellSize = params.lengthScale / N;
+    float a = dt / (cellSize * cellSize);
+
+    // Loop through Gauss-Seidel relaxation steps
+    for(int k = 0; k < params.solverSteps; k++){
+
+        // Loop through grid elements
+        for(int i = 1; i <= N; i++){
+            for(int j = 1; j <= N; j++){
+
+                // Adjust for temperature and density
+                float a_t;
+                if(params.temperatureOn){
+                    a_t = a * AdjustedViscosity(ind(i, j));
+                }else{
+                    a_t = a * params.visc;
                 }
 
                 // Diffusion step
@@ -331,23 +407,25 @@ void SimState::Gravitate(float * v, float * dens, float adens, float massRatio, 
     }
 }
 
-void SimState::Convect(float * v, float * dens, float * temp, float adens, float massRatio, float aTemp, float grav, float dt)
+void SimState::Convect(float * v, float dt)
 {
     // Adjust for time scale
-    float g = dt * grav;
-    float k = 1.0 - massRatio;
+    float g = dt * params.grav;
 
     // Loop through grid elements
     for(int i = 1; i <= N; i++){
         for(int j = 1; j <= N; j++){
 
             // Calculate thermal buoyancy values
-            float densRatio = dens[ind(i,j)] / adens;
-            float deltaT = temp[ind(i,j)] - aTemp;
-            float t = -1.0 * (deltaT / aTemp) / ((adens / dens[ind(i,j)]) - k);
+            float density;
+            if(params.temperatureOn){
+                density = MixedDensity(ind(i,j));
+            }else{
+                density = MixedDensityAtAirTemp(ind(i,j));
+            }
 
             // Calculate buoyant force
-            float bForce = (t + (k * densRatio)) / (1.0 + (k * densRatio));
+            float bForce = (density - params.airDens) / density;
 
             // Apply force to stream vector
             v[ind(i,j)] += g * bForce;
@@ -367,7 +445,7 @@ void SimState::DensityStep(float dt)
     swap(fields.dens_prev, fields.dens); 
 
     // Dissipate smoke
-    // Dissipate(fields.dens, 0.0, 1.0, dt);
+    Dissipate(fields.dens, 0.0, params.densDecay, dt);
 
     // Advect along streamlines
     Advect(0, fields.dens, fields.dens_prev, fields.xVel, fields.yVel, dt);
@@ -381,10 +459,8 @@ void SimState::VelocityStep(float dt)
     AddSource(fields.yVel, fields.yVel_prev, dt);
 
     // Perform gravitational acceleration
-    if(params.temperatureOn){
-        Convect(fields.yVel, fields.dens, fields.temp, params.airDens, params.massRatio, params.airTemp, params.grav, dt);
-    }else if(params.gravityOn){
-        Gravitate(fields.yVel, fields.dens, params.airDens, params.massRatio, params.grav, dt);
+    if(params.gravityOn){
+        Convect(fields.yVel, dt);
     }
 
     // Perform Hodge projection to remove divergence
@@ -392,11 +468,9 @@ void SimState::VelocityStep(float dt)
 
     // Perform velocity diffusion
     swap(fields.xVel_prev, fields.xVel);
-    // Diffuse(1, fields.xVel, fields.xVel_prev, params.visc, dt);
-    DiffuseMomentum(1, fields.xVel, fields.xVel_prev, fields.dens, fields.temp, params.airTemp, params.diff, dt);
+    DiffuseMomentum(1, fields.xVel, fields.xVel_prev, dt);
     swap(fields.yVel_prev, fields.yVel);
-    // Diffuse(2, fields.yVel, fields.yVel_prev, params.visc, dt);
-    DiffuseMomentum(1, fields.yVel, fields.yVel_prev, fields.dens, fields.temp, params.airTemp, params.diff, dt);
+    DiffuseMomentum(2, fields.yVel, fields.yVel_prev, dt);
 
     // Perform Hodge projection to remove divergence
     HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
@@ -419,15 +493,14 @@ void SimState::TemperatureStep(float dt)
 
     // Perform thermal diffusion
     swap(fields.temp_prev, fields.temp);
-    Diffuse(0, fields.temp, fields.temp_prev, params.diffTemp, dt);
+    DiffuseHeat(0, fields.temp, fields.temp_prev, params.diffTemp, dt);
     swap(fields.temp_prev, fields.temp);
 
     // Perform cooling due to surrounding air
-    // Dissipate(fields.temp, params.diffTemp, params.airTemp, dt);
+    Dissipate(fields.temp, params.airTemp, params.tempDecay, dt);
 
     // Advect along streamlines
     Advect(0, fields.temp, fields.temp_prev, fields.xVel, fields.yVel, dt);
-
 }
 
 
@@ -503,6 +576,28 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
 
 }
 
+// Constructor for full thermal simulation
+SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio, float airTemp, float diffTemp, float densDecay, float tempDecay)
+{
+    // Set input parameters
+    this -> lengthScale = lengthScale;
+    this -> visc = viscosity;
+    this -> diff = diffusion;
+    this -> grav = gravity;
+    this -> airDens = airDensity;
+    this -> massRatio = massRatio;
+    this -> airTemp = airTemp;
+    this -> diffTemp = diffTemp;
+    this -> densDecay = densDecay;
+    this -> tempDecay = tempDecay;
+
+    // Default options
+    gravityOn = true;
+    temperatureOn = true;
+    solverSteps = 20;
+
+}
+
 SimFields::SimFields()
 {
     // Default to 10 x 10 grid
@@ -524,19 +619,6 @@ SimFields::SimFields(int size)
     yVel_source   = new float[size];
     dens_source   = new float[size];
     temp_source   = new float[size];
-
-    // float xVel[size] = { 0 };
-    // float yVel[size] = { 0 };
-    // float dens[size] = { 0 };
-    // float temp[size] = { 0 };
-    // float xVel_prev[size] = { 0 };
-    // float yVel_prev[size] = { 0 };
-    // float dens_prev[size] = { 0 };
-    // float temp_prev[size] = { 0 };
-    // float xVel_source[size] = { 0 };
-    // float yVel_source[size] = { 0 };
-    // float dens_source[size] = { 0 };
-    // float temp_source[size] = { 0 };
 }
 
 

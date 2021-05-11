@@ -20,7 +20,7 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 50;
+    int N = 60;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
@@ -29,13 +29,14 @@ int main(int argc, char** argv){
     // Declarations
     float lengthScale = 1.0;        // Side length of the box
     float visc = 0.000018;          // Dynamic viscosity at air temperature
-    float diff = 0.000016;          // Diffusion constant at air temperature
+    float diff = 0.000028;          // Diffusion constant at air temperature
     float grav = -9.8;              // Gravitational force
     float airDensity = 1.29235;     // Density of background air
-    float massRatio = 0.5416;       // Ratio of molar mass of air / molar mass of gas
-    // float massRatio = 2.;           // Ratio of molar mass of air / molar mass of gas
+    float massRatio = 1.608;       // Ratio of molar mass of air / molar mass of gas
     float airTemp = 300.0;          // Temperature of background air
-    float diffTemp = 0.00001;       // Thermal diffusivity of gas
+    float diffTemp = 0.00002338;    // Thermal diffusivity of gas
+    float densDecay = 100.0;          // Rate of decay for density field
+    float tempDecay = 0.0;          // Rate of decay for temperature field
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -46,7 +47,7 @@ int main(int argc, char** argv){
 
 
     // Initialize state
-    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp);
+    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, densDecay, tempDecay);
     SimState testState = SimState(N, params);
     testState.SetSources(dens_source, u_source, v_source, t_source);
     testState.params.gravityOn = true;
@@ -76,9 +77,9 @@ int main(int argc, char** argv){
 
     // Set up source
     float strength = 1.0;
-    float angle = 80.0;
-    float thickness = 0.1;
-    float temp = 2000.0;
+    float angle = rand() % 360;
+    float thickness = 10.0;
+    float temp = 500.0;
 
     int sourceLocation = ind(int(ceil(N/2)), 10, N);
 
@@ -95,7 +96,7 @@ int main(int argc, char** argv){
 
         // Randomize
         angle += (static_cast <float> ((rand() % 11) - 5) * 2.0) * timer.DeltaTime();
-        // strength += (static_cast <float> ((rand() % 3) - 1) * 0.0) * timer.DeltaTime();
+        strength += (static_cast <float> ((rand() % 3) - 1) * 2.0) * timer.DeltaTime();
         // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds
@@ -138,6 +139,8 @@ float LerpColor(float densIn, float tempIn, int channel)
 
     float t = (tempIn - 300) / (400 - 300);
     float output = 0.0;
+
+    // output = bMod * densIn;
 
     switch(channel){
         case 1:

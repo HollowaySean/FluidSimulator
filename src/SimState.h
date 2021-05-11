@@ -13,6 +13,10 @@ struct SimParams
     SimParams(float lengthScale, float viscosity, float diffusion, 
                 float gravity, float airDensity, float massRatio, 
                 float airTemp, float diffTemp);
+    SimParams(float lengthScale, float viscosity, float diffusion, 
+                float gravity, float airDensity, float massRatio, 
+                float airTemp, float diffTemp,
+                float densDecay, float tempDecay);
 
     // Options
     bool gravityOn;
@@ -28,6 +32,8 @@ struct SimParams
     float massRatio;
     float airTemp;
     float diffTemp;
+    float densDecay;
+    float tempDecay;
 };
 
 // Structure to hold onto array pointers
@@ -76,6 +82,14 @@ class SimState
         float * GetYVelocity();
         float * GetTemperature();
 
+        // Modified fields
+        float MixedDensity(int ind);
+        float MixedDensityAtAirTemp(int ind);
+        float MixedTemperature(int ind);
+        float AdjustedMassDiffusivity(int ind);
+        float AdjustedViscosity(int ind);
+        float AdjustedThermalDiffusivity(int ind);
+
         // Grid size accessors
         int GetN();
         int GetSize();
@@ -97,11 +111,12 @@ class SimState
         void AddConstantSource(float *, float, float);
 
         void Diffuse(int, float *, float *, float, float);
-        void DiffuseMomentum(int, float *, float *, float *, float *, float, float, float);
+        void DiffuseHeat(int, float *, float *, float, float);
+        void DiffuseMomentum(int, float *, float *, float);
         void Dissipate(float *, float, float, float);
         void Advect(int, float *, float *, float *, float *, float);
         void Gravitate(float *, float *, float, float, float, float);
-        void Convect(float *, float *, float *, float, float, float, float, float);
+        void Convect(float *, float);
 
         void SetBoundary(int, float *);
         void HodgeProjection(float *, float *, float *, float *);

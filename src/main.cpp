@@ -20,7 +20,7 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 60;
+    int N = 100;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
@@ -32,11 +32,13 @@ int main(int argc, char** argv){
     float diff = 0.000028;          // Diffusion constant at air temperature
     float grav = -9.8;              // Gravitational force
     float airDensity = 1.29235;     // Density of background air
-    float massRatio = 1.608;       // Ratio of molar mass of air / molar mass of gas
+    // float massRatio = 1.608;       // Ratio of molar mass of air / molar mass of gas
+    // float massRatio = 1.608;       // Ratio of molar mass of air / molar mass of gas
+    float massRatio = 0.54;       // Ratio of molar mass of air / molar mass of gas
     float airTemp = 300.0;          // Temperature of background air
     float diffTemp = 0.00002338;    // Thermal diffusivity of gas
     float densDecay = 100.0;          // Rate of decay for density field
-    float tempDecay = 0.0;          // Rate of decay for temperature field
+    float tempDecay = 1;          // Rate of decay for temperature field
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -79,7 +81,7 @@ int main(int argc, char** argv){
     float strength = 1.0;
     float angle = rand() % 360;
     float thickness = 10.0;
-    float temp = 500.0;
+    float temp = 10000.0;
 
     int sourceLocation = ind(int(ceil(N/2)), 10, N);
 
@@ -135,21 +137,29 @@ int main(int argc, char** argv){
 float LerpColor(float densIn, float tempIn, int channel)
 {
     // Parameters
-    float bMod = 100.0;
+    // float bMod = 100.0;
+    float bMod = 0.00000000001;
 
-    float t = (tempIn - 300) / (400 - 300);
+    float t = (tempIn - 1900.) / (3200. - 1900.);
     float output = 0.0;
 
-    // output = bMod * densIn;
+    float intensity = bMod * densIn * tempIn * tempIn * tempIn * tempIn;
+    if(intensity > 1.0){ intensity = 1.0; }
+    float color;
 
     switch(channel){
         case 1:
-            output = bMod * densIn * t;
+            color = 1.0;
+            break;
+        case 2:
+            color = t * (1.0 - 0.5765) + 0.5765;
             break;
         case 3:
-            output = bMod * densIn * (1.0 - t);
+            color = t * (1.0 - 0.1608) + 0.1608;
             break;
     }
+
+    output = intensity * color;
 
     return output;
 }

@@ -24,7 +24,7 @@ int main(int argc, char** argv){
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
-    int maxFrameRate = 60;
+    int maxFrameRate = 20;
 
     // Declarations
     float lengthScale = 1.0;
@@ -34,7 +34,7 @@ int main(int argc, char** argv){
     float airDensity = 1.29235;
     float massRatio = 0.5416;
     float airTemp = 300.0;
-    float diffTemp = 0.0001;
+    float diffTemp = 0.0000001;
     float expansionTemp = 0.0;
 
     // Array initializations
@@ -46,7 +46,7 @@ int main(int argc, char** argv){
 
 
     // Initialize state
-    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio);
+    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, expansionTemp);
     SimState testState = SimState(N, params);
     testState.SetSources(dens_source, u_source, v_source, t_source);
     testState.params.gravityOn = true;
@@ -74,7 +74,7 @@ int main(int argc, char** argv){
     timer.StartSimulation();
 
     // Set up source
-    float strength = 20.0;
+    float strength = 0.0;
     float angle = 90.0;
     float thickness = 0.1;
     float temp = 500.0;
@@ -98,7 +98,7 @@ int main(int argc, char** argv){
         // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds
-        if(timer.RunTime() < 20000){
+        if(timer.RunTime() < 2000){
             dens_source[sourceLocation] = thickness;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
@@ -133,7 +133,7 @@ int main(int argc, char** argv){
 float LerpColor(float densIn, float tempIn, int channel)
 {
     // Parameters
-    float bMod = 500.0;
+    float bMod = 150.0;
 
     float t = (tempIn - 300) / (500 - 300);
     float output = 0.0;
@@ -144,6 +144,7 @@ float LerpColor(float densIn, float tempIn, int channel)
             break;
         case 3:
             output = bMod * densIn * (1.0 - t);
+            break;
     }
 
     return output;
@@ -168,7 +169,7 @@ void DisplayGLWindow(SimState currentState, int cellSize)
 
             glBegin(GL_QUADS);
 
-            glColor3f(  LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)], 1), 
+            glColor3f(  LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  1), 
                         LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  2), 
                         LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  3));
             glVertex2i( pixelsPerSquare * x,     

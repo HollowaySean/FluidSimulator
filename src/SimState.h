@@ -97,9 +97,10 @@ class SimState
         void AddSource(float *, float *, float);
         void AddConstantSource(float *, float, float);
 
-        void Gravitate(float *, float *, float, float, float, float);
         void Diffuse(int, float *, float *, float, float);
         void Advect(int, float *, float *, float *, float *, float);
+        void Gravitate(float *, float *, float, float, float, float);
+        void ThermalDecay(float *, float, float, float);
 
         void SetBoundary(int, float *);
         void HodgeProjection(float *, float *, float *, float *);

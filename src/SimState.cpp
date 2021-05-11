@@ -90,15 +90,15 @@ void SimState::ZeroArrays()
     SetConstantSource(fields.dens, 0.0);
     SetConstantSource(fields.xVel, 0.0);
     SetConstantSource(fields.yVel, 0.0);
-    SetConstantSource(fields.temp, 0.0);
+    SetConstantSource(fields.temp, params.airTemp);
     SetConstantSource(fields.dens_prev, 0.0);
     SetConstantSource(fields.xVel_prev, 0.0);
     SetConstantSource(fields.yVel_prev, 0.0);
-    SetConstantSource(fields.temp_prev, 0.0);
+    SetConstantSource(fields.temp_prev, params.airTemp);
     SetConstantSource(fields.dens_source, 0.0);
     SetConstantSource(fields.xVel_source, 0.0);
     SetConstantSource(fields.yVel_source, 0.0);
-    SetConstantSource(fields.temp_source, 0.0);
+    SetConstantSource(fields.temp_source, params.airTemp);
 }
 
 // Set array values to those of other array
@@ -277,6 +277,21 @@ void SimState::Gravitate(float * v, float * dens, float adens, float massRatio, 
     }
 }
 
+void SimState::ThermalDecay(float * t, float decayRate, float eqTemp, float dt)
+{
+    // Adjust for time scale
+    float d = decayRate * dt;
+
+    // Loop through grid elements
+    for(int i = 1; i <= N; i++){
+        for(int j = 1; j <= N; j++){
+
+            // Decay temperatures
+            t[ind(i,j)] -= d * (t[ind(i,j)] - eqTemp);
+        }
+    }
+}
+
 // Collected methods for density calculation
 void SimState::DensityStep(float dt)
 {
@@ -323,10 +338,18 @@ void SimState::TemperatureStep(float dt)
 {
     // Generate sources
     AddSource(fields.temp, fields.temp_prev, dt);
+
+    // Perform thermal diffusion
     swap(fields.temp_prev, fields.temp);
     Diffuse(0, fields.temp, fields.temp_prev, params.diffTemp, dt);
     swap(fields.temp_prev, fields.temp);
+
+    // Perform cooling due to surrounding air
+    ThermalDecay(fields.temp, params.diffTemp, params.airTemp, dt);
+
+    // Advect along streamlines
     Advect(0, fields.temp, fields.temp_prev, fields.xVel, fields.yVel, dt);
+
 }
 
 
@@ -415,12 +438,15 @@ SimFields::SimFields(int size)
     xVel          = new float[size];
     yVel          = new float[size];
     dens          = new float[size];
+    temp          = new float[size];
     xVel_prev     = new float[size];
     yVel_prev     = new float[size];
     dens_prev     = new float[size];
+    temp_prev     = new float[size];
     xVel_source   = new float[size];
     yVel_source   = new float[size];
     dens_source   = new float[size];
+    temp_source   = new float[size];
 }
 
 

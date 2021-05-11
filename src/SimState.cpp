@@ -63,6 +63,7 @@ void SimState::SimulationStep(float timeStep)
     SetSource(fields.dens_prev, fields.dens_source);
     SetSource(fields.xVel_prev, fields.xVel_source);
     SetSource(fields.yVel_prev, fields.yVel_source);
+    SetSource(fields.temp_prev, fields.temp_source);
 
     // Start futher simulation steps
     VelocityStep(timeStep);
@@ -175,6 +176,23 @@ void SimState::Diffuse(int b, float * x, float * x0, float diff, float dt)
     }
 }
 
+// Dissipate density
+void SimState::Dissipate(float * x, float eqVal, float rate, float dt)
+{
+    // Adjust for time scale
+    float d = rate * dt;
+
+    // Loop through grid elements
+    for(int i = 1; i <= N; i++){
+        for(int j = 1; j <= N; j++){
+
+            // Decay temperatures
+            x[ind(i,j)] -= d * (x[ind(i,j)] - eqVal);
+        }
+    }
+
+}
+
 // Perform advection step
 void SimState::Advect(int b, float * d, float * d0, float * u, float * v, float dt)
 {
@@ -277,17 +295,27 @@ void SimState::Gravitate(float * v, float * dens, float adens, float massRatio, 
     }
 }
 
-void SimState::ThermalDecay(float * t, float decayRate, float eqTemp, float dt)
+void SimState::Convect(float * v, float * dens, float * temp, float adens, float massRatio, float aTemp, float grav, float dt)
 {
     // Adjust for time scale
-    float d = decayRate * dt;
+    float g = dt * grav;
+    float k = 1.0 - massRatio;
 
     // Loop through grid elements
     for(int i = 1; i <= N; i++){
         for(int j = 1; j <= N; j++){
 
-            // Decay temperatures
-            t[ind(i,j)] -= d * (t[ind(i,j)] - eqTemp);
+            // Calculate thermal buoyancy values
+            float densRatio = dens[ind(i,j)] / adens;
+            float deltaT = temp[ind(i,j)] - aTemp;
+            float tMix = aTemp + (deltaT / ((adens / dens[ind(i,j)]) - massRatio));
+            float t = 1.0 - (tMix / aTemp);
+
+            // Calculate buoyant force
+            float bForce = (t + (k * densRatio)) / (1.0 + (k * densRatio));
+
+            // Apply force to stream vector
+            v[ind(i,j)] += g * bForce;
         }
     }
 }
@@ -295,11 +323,18 @@ void SimState::ThermalDecay(float * t, float decayRate, float eqTemp, float dt)
 // Collected methods for density calculation
 void SimState::DensityStep(float dt)
 {
-    // Perform source, diffusion, and advection steps
+    // Add density source
     AddSource(fields.dens, fields.dens_prev, dt);
+
+    // Diffuse by Fick's law
     swap(fields.dens_prev, fields.dens); 
     Diffuse(0, fields.dens, fields.dens_prev, params.diff, dt);
     swap(fields.dens_prev, fields.dens); 
+
+    // Dissipate smoke
+    Dissipate(fields.dens, 0.0, 100.0, dt);
+
+    // Advect along streamlines
     Advect(0, fields.dens, fields.dens_prev, fields.xVel, fields.yVel, dt);
 }
 
@@ -311,8 +346,14 @@ void SimState::VelocityStep(float dt)
     AddSource(fields.yVel, fields.yVel_prev, dt);
 
     // Perform gravitational acceleration
-    if(params.gravityOn)
+    if(params.temperatureOn){
+        Convect(fields.yVel, fields.dens, fields.temp, params.airDens, params.massRatio, params.airTemp, params.grav, dt);
+    }else if(params.gravityOn){
         Gravitate(fields.yVel, fields.dens, params.airDens, params.massRatio, params.grav, dt);
+    }
+
+    // Perform Hodge projection to remove divergence
+    HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
 
     // Perform velocity diffusion
     swap(fields.xVel_prev, fields.xVel);
@@ -345,7 +386,7 @@ void SimState::TemperatureStep(float dt)
     swap(fields.temp_prev, fields.temp);
 
     // Perform cooling due to surrounding air
-    ThermalDecay(fields.temp, params.diffTemp, params.airTemp, dt);
+    Dissipate(fields.temp, params.diffTemp, params.airTemp, dt);
 
     // Advect along streamlines
     Advect(0, fields.temp, fields.temp_prev, fields.xVel, fields.yVel, dt);
@@ -406,7 +447,7 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
 }
 
 // Constructor for full thermal simulation
-SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio, float airTemp, float diffTemp, float expansionTemp)
+SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio, float airTemp, float diffTemp)
 {
     // Set input parameters
     this -> lengthScale = lengthScale;
@@ -417,7 +458,6 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
     this -> massRatio = massRatio;
     this -> airTemp = airTemp;
     this -> diffTemp = diffTemp;
-    this -> expansionTemp = expansionTemp;
 
     // Default options
     gravityOn = true;

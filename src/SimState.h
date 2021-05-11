@@ -12,7 +12,7 @@ struct SimParams
                 float gravity, float airDensity, float massRatio);
     SimParams(float lengthScale, float viscosity, float diffusion, 
                 float gravity, float airDensity, float massRatio, 
-                float airTemp, float diffTemp, float expansionTemp);
+                float airTemp, float diffTemp);
 
     // Options
     bool gravityOn;
@@ -28,7 +28,6 @@ struct SimParams
     float massRatio;
     float airTemp;
     float diffTemp;
-    float expansionTemp;
 };
 
 // Structure to hold onto array pointers
@@ -98,9 +97,10 @@ class SimState
         void AddConstantSource(float *, float, float);
 
         void Diffuse(int, float *, float *, float, float);
+        void Dissipate(float *, float, float, float);
         void Advect(int, float *, float *, float *, float *, float);
         void Gravitate(float *, float *, float, float, float, float);
-        void ThermalDecay(float *, float, float, float);
+        void Convect(float *, float *, float *, float, float, float, float, float);
 
         void SetBoundary(int, float *);
         void HodgeProjection(float *, float *, float *, float *);

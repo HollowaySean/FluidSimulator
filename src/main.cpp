@@ -24,18 +24,18 @@ int main(int argc, char** argv){
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
-    int maxFrameRate = 20;
+    int maxFrameRate = 60;
 
     // Declarations
     float lengthScale = 1.0;
-    float visc = 0.00001;
+    float visc = 0.000001;
     float diff = 0.000016;
     float grav = -9.8;
     float airDensity = 1.29235;
-    float massRatio = 0.5416;
+    // float massRatio = 0.5416;
+    float massRatio = 2.;
     float airTemp = 300.0;
-    float diffTemp = 0.0000001;
-    float expansionTemp = 0.0;
+    float diffTemp = 0.00001;
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -46,10 +46,11 @@ int main(int argc, char** argv){
 
 
     // Initialize state
-    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, expansionTemp);
+    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp);
     SimState testState = SimState(N, params);
     testState.SetSources(dens_source, u_source, v_source, t_source);
     testState.params.gravityOn = true;
+    testState.params.temperatureOn = true;
 
     // Set up OpenGL state
     glutInit(&argc, argv);
@@ -76,10 +77,10 @@ int main(int argc, char** argv){
     // Set up source
     float strength = 0.0;
     float angle = 90.0;
-    float thickness = 0.1;
-    float temp = 500.0;
+    float thickness = 1.0;
+    float temp = 1000.0;
 
-    int sourceLocation = ind(int(ceil(N/2)), 5, N);
+    int sourceLocation = ind(int(ceil(N/2)) + 3, 10, N);
 
 
 
@@ -93,12 +94,12 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Randomize
-        // angle += (static_cast <float> ((rand() % 11) - 5) * 10.0) * timer.DeltaTime();
+        angle += (static_cast <float> ((rand() % 11) - 5) * 2.0) * timer.DeltaTime();
         // strength += (static_cast <float> ((rand() % 3) - 1) * 0.0) * timer.DeltaTime();
         // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds
-        if(timer.RunTime() < 2000){
+        if(timer.RunTime() < 20000){
             dens_source[sourceLocation] = thickness;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
@@ -133,9 +134,9 @@ int main(int argc, char** argv){
 float LerpColor(float densIn, float tempIn, int channel)
 {
     // Parameters
-    float bMod = 150.0;
+    float bMod = 100.0;
 
-    float t = (tempIn - 300) / (500 - 300);
+    float t = (tempIn - 300) / (400 - 300);
     float output = 0.0;
 
     switch(channel){

@@ -10,6 +10,7 @@ using namespace std;
 
 // Macros
 #define ind(i,j) ((i) + (N + 2)*(j))
+#define indN(i,j,N) ((i) + ((N) + 2)*(j))
 #define swap(x0, x) {float *tmp = x0; x0 = x; x = tmp;}
 
 
@@ -562,17 +563,91 @@ SimSource::SimSource(SimState* simState)
     temp = simState -> fields.temp_source;
 }
 
+// Update sources in SimState object
+void SimSource::UpdateSources()
+{
+    // Loop through list of sources
+    for (const Source* source : sources){
+
+        // Loop through source indices
+        for(const int & index : source -> indices){
+
+            xVel[index] += source -> xVel;
+            yVel[index] += source -> yVel;
+            dens[index] += source -> dens;
+            temp[index] = max(temp[index], source -> temp);
+        }
+    }
+}
+
+// Calculate indices covered by shape
+void SimSource::Source::SetIndices(int N, Shape shape, float xCenter, float yCenter, float radius)
+{
+    float xCInd = float(N + 2) * (xCenter + 1.0) / 2.0;
+    float yCInd = float(N + 2) * (yCenter + 1.0) / 2.0;
+    float rInd  = radius / 2.0;
+
+    int xMinInd = max(int(floor(xCInd - rInd)), 0);
+    int xMaxInd = min(int(ceil( xCInd + rInd)), N+2);
+    int yMinInd = max(int(floor(yCInd - rInd)), 0);
+    int yMaxInd = min(int(ceil( yCInd + rInd)), N+2);
+
+
+    for(int x = xMinInd; x <= xMaxInd; x++){
+        for(int y = yMinInd; y <= yMaxInd; y++){
+
+            switch(shape){
+
+                case square:
+                    indices.push_back(indN(x, y, N));
+                    break;
+
+                case circle:
+                    if((x - xCInd) * (x - xCInd) + (y - yCInd) * (y - yCInd) <= rInd * rInd){
+                        indices.push_back(indN(x, y, N));
+                    }
+                    break;
+
+                case diamond:
+                    if(abs(x - xCInd) + abs(y - yCInd) <= rInd ){
+                        indices.push_back(indN(x, y, N));
+                    }
+                    break;
+            }
+        }
+    }
+}
+
 // Create gas source and add to source list
 void SimSource::CreateGasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius)
 {
-    GasSource newSource = GasSource(shape, flowRate, temp, xCenter, yCenter, radius);
-    sources.push_back(&newSource);
+    GasSource* newSource = new GasSource(N, lengthScale, shape, flowRate, temp, xCenter, yCenter, radius);
+    sources.push_back(newSource);
 }
 
 // Gas source constructor
-SimSource::GasSource::GasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius)
+SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius)
 {
-    
+    // Calculate aperture size
+    float sourceSize = radius * radius * lengthScale * lengthScale;
+    switch(shape){
+        case square:
+            break;
+        case circle:
+            sourceSize *= 3.141526 / 4.0;
+            break;
+        case diamond:
+            sourceSize = 0.5;
+    }
+
+    // Calculate sources
+    this -> dens = flowRate / sourceSize;
+    this -> temp = temp;
+    this -> xVel = 0.0;
+    this -> yVel = 0.0;
+
+    // Set source indices
+    SetIndices(N, shape, xCenter, yCenter, radius);
 }
 
 

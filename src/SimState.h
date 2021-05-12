@@ -144,15 +144,15 @@ class SimSource
         SimState* simState;
 
         // Public methods
-        void CreateGasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius);
-        void CreateWindSource(Shape shape, float angle, float speed, float xCenter, float yCenter, float radius);
-        void CreateHeatSource(Shape shape, float temp, float xCenter, float yCenter, float radius);
+        void CreateGasSource(   Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius);
+        void CreateWindSource(  Shape shape, float angle, float speed, float xCenter, float yCenter, float radius);
+        void CreateHeatSource(  Shape shape, float temp, float xCenter, float yCenter, float radius);
         void CreateEnergySource(Shape shape, float flux, float referenceTemp, float xCenter, float yCenter, float radius);
-
-    private:
 
         // Update sim object
         void UpdateSources();
+
+    protected:
 
         // Saved data from SimState
         int N;
@@ -180,26 +180,23 @@ class SimSource
                 // Public methods
                 void SetActive(bool isActive);
 
-            private:
-
                 // Active flag
                 bool isActive = true;
 
                 // Arrays of sources
-                int * indices;
+                std::list<int> indices;
                 float xVel;
                 float yVel;
                 float dens;
                 float temp;
 
-            protected:
-
-                void SetIndices(Shape shape, float xCenter, float yCenter, float radius);
+                // Index calculation method
+                void SetIndices(int N, Shape shape, float xCenter, float yCenter, float radius);
         };
 
         class GasSource: public Source { 
             public:
-                GasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius);
+                GasSource(int N, float lengthScale, Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius);
                 float flowRate, temp; };
 
         class WindSource: public Source { float speed, direction; };

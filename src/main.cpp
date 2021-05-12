@@ -39,20 +39,12 @@ int main(int argc, char** argv){
     float densDecay = 100.0;        // Rate of decay for density field
     float tempDecay = 0.0;            // Rate of decay for temperature field
 
-    // Array initializations
-    float dens_source[size] = { 0 };
-    float u_source[size] = { 0 };
-    float v_source[size] = { 0 };
-    float t_source[size] = { airTemp };
-
 
 
     // Initialize state
     SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, densDecay, tempDecay);
     SimState testState = SimState(N, params);
-    testState.SetSources(dens_source, u_source, v_source, t_source);
-    testState.params.gravityOn = true;
-    testState.params.temperatureOn = true;
+    SimSource sources = SimSource(&testState);
 
     // Set up OpenGL state
     glutInit(&argc, argv);
@@ -71,18 +63,13 @@ int main(int argc, char** argv){
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
     
 
+    // Set up sources
+    sources.CreateGasSource(SimSource::square, 0.1, 0.0, 0.0, 0.0, 0.1);
+    sources.UpdateSources();
 
     // Initialize timers
     SimTimer timer = SimTimer(maxFrameRate);
     timer.StartSimulation();
-
-    // Set up source
-    float strength = 0.0;
-    float angle = rand() % 360;
-    float thickness = 10.0;
-    float temp = 10000.0;
-
-    int sourceLocation = ind(int(ceil(N/2)), 5, N);
 
 
 
@@ -94,51 +81,6 @@ int main(int argc, char** argv){
 
         // Draw current density to OpenGL window
         DisplayGLWindow(testState, cellSize);
-
-        // Randomize
-        // angle += (static_cast <float> ((rand() % 11) - 5) * 2.0) * timer.DeltaTime();
-        // strength += (static_cast <float> ((rand() % 3) - 1) * 2.0) * timer.DeltaTime();
-        // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
-
-        // Add sources for first 10 seconds
-        if(timer.RunTime() < 60000){
-            dens_source[sourceLocation] = thickness;
-            dens_source[sourceLocation+1] = thickness;
-            dens_source[sourceLocation+2] = thickness;
-            dens_source[sourceLocation+3] = thickness;
-            dens_source[sourceLocation+4] = thickness;
-            dens_source[sourceLocation+5] = thickness;
-            dens_source[sourceLocation+6] = thickness;
-            dens_source[sourceLocation-1] = thickness;
-            dens_source[sourceLocation-2] = thickness;
-            dens_source[sourceLocation-3] = thickness;
-            dens_source[sourceLocation-4] = thickness;
-            dens_source[sourceLocation-5] = thickness;
-            dens_source[sourceLocation-6] = thickness;
-            u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
-            v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
-            t_source[sourceLocation] = temp;
-            t_source[sourceLocation+1] = temp;
-            t_source[sourceLocation+2] = temp;
-            t_source[sourceLocation+3] = temp;
-            t_source[sourceLocation+4] = temp;
-            t_source[sourceLocation+5] = temp;
-            t_source[sourceLocation+6] = temp;
-            t_source[sourceLocation-1] = temp;
-            t_source[sourceLocation-2] = temp;
-            t_source[sourceLocation-3] = temp;
-            t_source[sourceLocation-4] = temp;
-            t_source[sourceLocation-5] = temp;
-            t_source[sourceLocation-6] = temp;
-        }else{
-            dens_source[sourceLocation] = 0.0;
-            u_source[sourceLocation] = 0.0;
-            v_source[sourceLocation] = 0.0;
-            t_source[sourceLocation] = airTemp;
-        }
-
-        // Update sources
-        testState.SetSources(dens_source, u_source, v_source, t_source);
 
         // Update simulation state
         testState.SimulationStep(timer.DeltaTime());
@@ -160,25 +102,29 @@ int main(int argc, char** argv){
 float LerpColor(float densIn, float tempIn, int channel)
 {
     // Parameters
-    // float bMod = 100.0;
+    // float bMod = 1000.0;
     float bMod = 0.000000000001;
 
-    float t = (tempIn - 1900.) / (3200. - 1900.);
+    float t = (tempIn - 0.0) / (1300. - 0.);
     float output = 0.0;
 
-    float intensity = bMod * densIn * tempIn * tempIn * tempIn * tempIn;
+    // float intensity = bMod * densIn * tempIn * tempIn * tempIn * tempIn;
+    float intensity = 1.0;
     if(intensity > 1.0){ intensity = 1.0; }
     float color;
 
     switch(channel){
         case 1:
-            color = 1.0;
+            // color = 1.0;
+            color = t;
             break;
         case 2:
-            color = t * (1.0 - 0.5765) + 0.5765;
+            // color = t * (1.0 - 0.5765) + 0.5765;
+            color = 0.0;
             break;
         case 3:
-            color = t * (1.0 - 0.1608) + 0.1608;
+            // color = t * (1.0 - 0.1608) + 0.1608;
+            color = 1.0 - t;
             break;
     }
 
@@ -195,7 +141,8 @@ void DisplayGLWindow(SimState currentState, int cellSize)
 
     // Get density map
     float * density = currentState.GetDensity();
-    float * temperature = currentState.GetTemperature();
+    // float * temperature = currentState.GetTemperature();
+    float * temperature = currentState.fields.temp_source;
 
     // Clear OpenGL window
     glClear(GL_COLOR_BUFFER_BIT);

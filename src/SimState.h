@@ -1,7 +1,5 @@
 /* Header file for simulation state class */
 
-
-
 // Structure to hold onto simulation properties and physical constants
 struct SimParams
 {
@@ -19,6 +17,7 @@ struct SimParams
                 float densDecay, float tempDecay);
 
     // Options
+    bool advancedCoefficients;
     bool gravityOn;
     bool temperatureOn;
     int solverSteps;
@@ -62,6 +61,11 @@ struct SimFields
     float * temp_source;
 };
 
+// Structure which contains a density, velocity, or heat source for simulator
+class SimSource
+{
+
+};
 
 // Class which defines and contains important simulation methods
 class SimState
@@ -83,12 +87,12 @@ class SimState
         float * GetTemperature();
 
         // Modified fields
-        float MixedDensity(int ind);
-        float MixedDensityAtAirTemp(int ind);
-        float MixedTemperature(int ind);
-        float AdjustedMassDiffusivity(int ind);
-        float AdjustedViscosity(int ind);
-        float AdjustedThermalDiffusivity(int ind);
+        static float MixedDensity(int ind, SimParams params, SimFields fields);
+        static float MixedDensityAtAirTemp(int ind, SimParams params, SimFields fields);
+        static float MixedTemperature(int ind, SimParams params, SimFields fields);
+        static float AdjustedMassDiffusivity(int ind, SimParams params, SimFields fields);
+        static float AdjustedViscosity(int ind, SimParams params, SimFields fields);
+        static float AdjustedThermalDiffusivity(int ind, SimParams params, SimFields fields);
 
         // Grid size accessors
         int GetN();
@@ -110,12 +114,9 @@ class SimState
         void AddSource(float *, float *, float);
         void AddConstantSource(float *, float, float);
 
-        void Diffuse(int, float *, float *, float, float);
-        void DiffuseHeat(int, float *, float *, float, float);
-        void DiffuseMomentum(int, float *, float *, float);
+        void DiffuseImproved(int b, float * x, float * x0, float (*diff)(int, SimParams, SimFields), float dt);
         void Dissipate(float *, float, float, float);
         void Advect(int, float *, float *, float *, float *, float);
-        void Gravitate(float *, float *, float, float, float, float);
         void Convect(float *, float);
 
         void SetBoundary(int, float *);

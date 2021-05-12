@@ -20,11 +20,11 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 100;
+    int N = 50;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
-    int maxFrameRate = 25;
+    int maxFrameRate = 60;
 
     // Declarations
     float lengthScale = 1.0;        // Side length of the box
@@ -33,12 +33,11 @@ int main(int argc, char** argv){
     float grav = -9.8;              // Gravitational force
     float airDensity = 1.29235;     // Density of background air
     // float massRatio = 1.608;       // Ratio of molar mass of air / molar mass of gas
-    // float massRatio = 1.608;       // Ratio of molar mass of air / molar mass of gas
     float massRatio = 0.54;       // Ratio of molar mass of air / molar mass of gas
     float airTemp = 300.0;          // Temperature of background air
     float diffTemp = 0.00002338;    // Thermal diffusivity of gas
-    float densDecay = 100.0;          // Rate of decay for density field
-    float tempDecay = 1;          // Rate of decay for temperature field
+    float densDecay = 100.0;        // Rate of decay for density field
+    float tempDecay = 0.0;            // Rate of decay for temperature field
 
     // Array initializations
     float dens_source[size] = { 0 };
@@ -78,12 +77,12 @@ int main(int argc, char** argv){
     timer.StartSimulation();
 
     // Set up source
-    float strength = 1.0;
+    float strength = 0.0;
     float angle = rand() % 360;
     float thickness = 10.0;
     float temp = 10000.0;
 
-    int sourceLocation = ind(int(ceil(N/2)), 10, N);
+    int sourceLocation = ind(int(ceil(N/2)), 5, N);
 
 
 
@@ -97,16 +96,40 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Randomize
-        angle += (static_cast <float> ((rand() % 11) - 5) * 2.0) * timer.DeltaTime();
-        strength += (static_cast <float> ((rand() % 3) - 1) * 2.0) * timer.DeltaTime();
+        // angle += (static_cast <float> ((rand() % 11) - 5) * 2.0) * timer.DeltaTime();
+        // strength += (static_cast <float> ((rand() % 3) - 1) * 2.0) * timer.DeltaTime();
         // thickness += (static_cast <float> ((rand() % 3) - 1) * 10.0) * timer.DeltaTime();
 
         // Add sources for first 10 seconds
         if(timer.RunTime() < 60000){
             dens_source[sourceLocation] = thickness;
+            dens_source[sourceLocation+1] = thickness;
+            dens_source[sourceLocation+2] = thickness;
+            dens_source[sourceLocation+3] = thickness;
+            dens_source[sourceLocation+4] = thickness;
+            dens_source[sourceLocation+5] = thickness;
+            dens_source[sourceLocation+6] = thickness;
+            dens_source[sourceLocation-1] = thickness;
+            dens_source[sourceLocation-2] = thickness;
+            dens_source[sourceLocation-3] = thickness;
+            dens_source[sourceLocation-4] = thickness;
+            dens_source[sourceLocation-5] = thickness;
+            dens_source[sourceLocation-6] = thickness;
             u_source[sourceLocation] = strength * cos(angle * 3.141592/180.0);
             v_source[sourceLocation] = strength * sin(angle * 3.141592/180.0);
             t_source[sourceLocation] = temp;
+            t_source[sourceLocation+1] = temp;
+            t_source[sourceLocation+2] = temp;
+            t_source[sourceLocation+3] = temp;
+            t_source[sourceLocation+4] = temp;
+            t_source[sourceLocation+5] = temp;
+            t_source[sourceLocation+6] = temp;
+            t_source[sourceLocation-1] = temp;
+            t_source[sourceLocation-2] = temp;
+            t_source[sourceLocation-3] = temp;
+            t_source[sourceLocation-4] = temp;
+            t_source[sourceLocation-5] = temp;
+            t_source[sourceLocation-6] = temp;
         }else{
             dens_source[sourceLocation] = 0.0;
             u_source[sourceLocation] = 0.0;
@@ -138,7 +161,7 @@ float LerpColor(float densIn, float tempIn, int channel)
 {
     // Parameters
     // float bMod = 100.0;
-    float bMod = 0.00000000001;
+    float bMod = 0.000000000001;
 
     float t = (tempIn - 1900.) / (3200. - 1900.);
     float output = 0.0;

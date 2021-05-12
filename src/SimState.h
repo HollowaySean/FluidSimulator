@@ -64,7 +64,31 @@ struct SimFields
 // Structure which contains a density, velocity, or heat source for simulator
 class SimSource
 {
+    public:
 
+        // Constructor
+        SimSource(SimState simState);
+
+        // SimState object
+        SimState simState;
+
+    private:
+
+        // Update sim object
+        void UpdateSources();
+
+        class Source
+        {
+            public:
+                enum Shape { square, circle };
+                enum Type  { Gas, Wind, Heat };
+
+                Shape shape;
+                Type type;
+
+                int radius;
+                bool isActive;
+        };
 };
 
 // Class which defines and contains important simulation methods

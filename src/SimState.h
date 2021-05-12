@@ -1,5 +1,8 @@
 /* Header file for simulation state class */
 
+// Include statements
+#include <list>
+
 // Structure to hold onto simulation properties and physical constants
 struct SimParams
 {
@@ -61,42 +64,13 @@ struct SimFields
     float * temp_source;
 };
 
-// Structure which contains a density, velocity, or heat source for simulator
-class SimSource
-{
-    public:
-
-        // Constructor
-        SimSource(SimState simState);
-
-        // SimState object
-        SimState simState;
-
-    private:
-
-        // Update sim object
-        void UpdateSources();
-
-        class Source
-        {
-            public:
-                enum Shape { square, circle };
-                enum Type  { Gas, Wind, Heat };
-
-                Shape shape;
-                Type type;
-
-                int radius;
-                bool isActive;
-        };
-};
-
 // Class which defines and contains important simulation methods
 class SimState
 {
     public:
 
         // Constructors
+        SimState();
         SimState(int N);
         SimState(int N, SimParams params);
 
@@ -125,6 +99,9 @@ class SimState
         // Parameter struct
         SimParams params;
 
+        // Array struct
+        SimFields fields;
+
     private:
 
         // Grid size
@@ -149,9 +126,90 @@ class SimState
         void DensityStep(float);
         void VelocityStep(float);
         void TemperatureStep(float);
+};
 
-        // Array struct
-        SimFields fields;
+// Structure which contains a density, velocity, or heat source for simulator
+class SimSource
+{
+    public:
+
+        // Constructor
+        SimSource(SimState*);
+
+        // Enumerable type designators
+        enum Shape { square, circle, diamond };
+        enum Type  { gas, wind, heat, energy };
+
+        // SimState object
+        SimState* simState;
+
+        // Public methods
+        void CreateGasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius);
+        void CreateWindSource(Shape shape, float angle, float speed, float xCenter, float yCenter, float radius);
+        void CreateHeatSource(Shape shape, float temp, float xCenter, float yCenter, float radius);
+        void CreateEnergySource(Shape shape, float flux, float referenceTemp, float xCenter, float yCenter, float radius);
+
+    private:
+
+        // Update sim object
+        void UpdateSources();
+
+        // Saved data from SimState
+        int N;
+        int size;
+        float lengthScale;
+
+        // Pointers to source grids
+        float * xVel;
+        float * yVel;
+        float * dens;
+        float * temp;
+
+        // Sub-class for single source
+        class Source
+        {
+            public:
+
+                // Enumerable type designators
+                Shape shape;
+                Type type;
+
+                // Size of source
+                float radius;
+
+                // Public methods
+                void SetActive(bool isActive);
+
+            private:
+
+                // Active flag
+                bool isActive = true;
+
+                // Arrays of sources
+                int * indices;
+                float xVel;
+                float yVel;
+                float dens;
+                float temp;
+
+            protected:
+
+                void SetIndices(Shape shape, float xCenter, float yCenter, float radius);
+        };
+
+        class GasSource: public Source { 
+            public:
+                GasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius);
+                float flowRate, temp; };
+
+        class WindSource: public Source { float speed, direction; };
+
+        class HeatSource: public Source { float temp; };
+
+        class EnergySource: public Source { float flux, referenceTemp; };
+
+        // List of sources
+        std::list<SimSource::Source*> sources;
 };
 
 // Method to display simulation state in terminal

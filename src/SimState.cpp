@@ -542,6 +542,41 @@ SimFields::SimFields(int size)
 
 
 
+/// SIMSOURCES METHODS ///
+
+// Constructor, taking SimState reference as input
+SimSource::SimSource(SimState* simState)
+{
+    // Save pointer to SimState
+    this -> simState = simState;
+
+    // Retrieve parameters from SimState
+    N           = simState -> GetN();
+    size        = simState -> GetSize();
+    lengthScale = simState -> params.lengthScale;
+
+    // Retrieve pointers to source arrays
+    xVel = simState -> fields.xVel_source;
+    yVel = simState -> fields.yVel_source;
+    dens = simState -> fields.dens_source;
+    temp = simState -> fields.temp_source;
+}
+
+// Create gas source and add to source list
+void SimSource::CreateGasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius)
+{
+    GasSource newSource = GasSource(shape, flowRate, temp, xCenter, yCenter, radius);
+    sources.push_back(&newSource);
+}
+
+// Gas source constructor
+SimSource::GasSource::GasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius)
+{
+    
+}
+
+
+
 /// EXTERNAL METHODS ///
 
 // Display density on terminal

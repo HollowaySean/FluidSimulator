@@ -20,11 +20,11 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 50;
+    int N = 80;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int size = (N + 2) * (N + 2);
-    int maxFrameRate = 60;
+    int maxFrameRate = 25;
 
     // Declarations
     float lengthScale = 1.0;        // Side length of the box
@@ -64,7 +64,7 @@ int main(int argc, char** argv){
     
 
     // Set up sources
-    sources.CreateGasSource(SimSource::square, 0.1, 0.0, 0.0, 0.0, 0.1);
+    sources.CreateGasSource(SimSource::circle, 0.05, 1500.0, 0.0, -0.75, 0.05);
     sources.UpdateSources();
 
     // Initialize timers
@@ -102,29 +102,24 @@ int main(int argc, char** argv){
 float LerpColor(float densIn, float tempIn, int channel)
 {
     // Parameters
-    // float bMod = 1000.0;
     float bMod = 0.000000000001;
 
-    float t = (tempIn - 0.0) / (1300. - 0.);
+    float t = (tempIn - 1900.0) / (3200. - 1900.);
     float output = 0.0;
 
-    // float intensity = bMod * densIn * tempIn * tempIn * tempIn * tempIn;
-    float intensity = 1.0;
+    float intensity = bMod * densIn * tempIn * tempIn * tempIn * tempIn;
     if(intensity > 1.0){ intensity = 1.0; }
     float color;
 
     switch(channel){
         case 1:
-            // color = 1.0;
-            color = t;
+            color = 1.0;
             break;
         case 2:
-            // color = t * (1.0 - 0.5765) + 0.5765;
-            color = 0.0;
+            color = t * (1.0 - 0.5765) + 0.5765;
             break;
         case 3:
-            // color = t * (1.0 - 0.1608) + 0.1608;
-            color = 1.0 - t;
+            color = t * (1.0 - 0.1608) + 0.1608;
             break;
     }
 
@@ -141,8 +136,7 @@ void DisplayGLWindow(SimState currentState, int cellSize)
 
     // Get density map
     float * density = currentState.GetDensity();
-    // float * temperature = currentState.GetTemperature();
-    float * temperature = currentState.fields.temp_source;
+    float * temperature = currentState.GetTemperature();
 
     // Clear OpenGL window
     glClear(GL_COLOR_BUFFER_BIT);

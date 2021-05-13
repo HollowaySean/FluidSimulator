@@ -113,6 +113,7 @@ class SimState
         void SetSource(float *, float *);
         void SetConstantSource(float *, float);
         void AddSource(float *, float *, float);
+        void AddHeatSource(float *, float *);
         void AddConstantSource(float *, float, float);
 
         void DiffuseImproved(int b, float * x, float * x0, float (*diff)(int, SimParams, SimFields), float dt);
@@ -196,12 +197,12 @@ class SimSource
 
         class GasSource: public Source { 
             public:
-                GasSource(int N, float lengthScale, Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius);
-                float flowRate, temp; };
+                GasSource(int N, float lengthScale, Shape shape, float flowRate, float sourceTemp, float xCenter, float yCenter, float radius);
+                float flowRate, sourceTemp; };
 
         class WindSource: public Source { float speed, direction; };
 
-        class HeatSource: public Source { float temp; };
+        class HeatSource: public Source { float sourceTemp; };
 
         class EnergySource: public Source { float flux, referenceTemp; };
 

@@ -172,6 +172,15 @@ void SimState::AddSource(float * x, float * s, float dt)
     }
 }
 
+// Add heat source via maximum temp (could use revision)
+void SimState::AddHeatSource(float * t, float * s)
+{
+    // Loop through grid elements
+    for(int i = 0; i < size; i++){
+        t[i] = max(t[i], s[i]);
+    }
+}
+
 // Add constant source value into array values
 void SimState::AddConstantSource(float * x, float s, float dt)
 {
@@ -403,7 +412,7 @@ void SimState::VelocityStep(float dt)
 void SimState::TemperatureStep(float dt)
 {
     // Generate sources
-    AddSource(fields.temp, fields.temp_prev, dt);
+    AddHeatSource(fields.temp, fields.temp_prev);
 
     // Perform thermal diffusion
     swap(fields.temp_prev, fields.temp);
@@ -585,32 +594,32 @@ void SimSource::Source::SetIndices(int N, Shape shape, float xCenter, float yCen
 {
     float xCInd = float(N + 2) * (xCenter + 1.0) / 2.0;
     float yCInd = float(N + 2) * (yCenter + 1.0) / 2.0;
-    float rInd  = radius / 2.0;
+    float rInd  = N * radius / 2.0;
 
-    int xMinInd = max(int(floor(xCInd - rInd)), 0);
-    int xMaxInd = min(int(ceil( xCInd + rInd)), N+2);
-    int yMinInd = max(int(floor(yCInd - rInd)), 0);
-    int yMaxInd = min(int(ceil( yCInd + rInd)), N+2);
+    float xMinInd = max(floor(xCInd - rInd), 0.0f);
+    float xMaxInd = min(ceil( xCInd + rInd), float(N+2));
+    float yMinInd = max(floor(yCInd - rInd), 0.0f);
+    float yMaxInd = min(ceil( yCInd + rInd), float(N+2));
 
 
-    for(int x = xMinInd; x <= xMaxInd; x++){
-        for(int y = yMinInd; y <= yMaxInd; y++){
+    for(float x = xMinInd; x <= xMaxInd; x++){
+        for(float y = yMinInd; y <= yMaxInd; y++){
 
             switch(shape){
 
                 case square:
-                    indices.push_back(indN(x, y, N));
+                    indices.push_back(indN(int(x), float(y), N));
                     break;
 
                 case circle:
                     if((x - xCInd) * (x - xCInd) + (y - yCInd) * (y - yCInd) <= rInd * rInd){
-                        indices.push_back(indN(x, y, N));
+                        indices.push_back(indN(int(x), float(y), N));
                     }
                     break;
 
                 case diamond:
                     if(abs(x - xCInd) + abs(y - yCInd) <= rInd ){
-                        indices.push_back(indN(x, y, N));
+                        indices.push_back(indN(int(x), float(y), N));
                     }
                     break;
             }
@@ -621,28 +630,30 @@ void SimSource::Source::SetIndices(int N, Shape shape, float xCenter, float yCen
 // Create gas source and add to source list
 void SimSource::CreateGasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius)
 {
-    GasSource* newSource = new GasSource(N, lengthScale, shape, flowRate, temp, xCenter, yCenter, radius);
+    GasSource* newGasSource = new GasSource(N, lengthScale, shape, flowRate, temp, xCenter, yCenter, radius);
+    Source* newSource = newGasSource;
     sources.push_back(newSource);
 }
 
 // Gas source constructor
-SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius)
+SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flowRate, float sourceTemp, float xCenter, float yCenter, float radius)
 {
     // Calculate aperture size
     float sourceSize = radius * radius * lengthScale * lengthScale;
     switch(shape){
         case square:
+            sourceSize *= 1.0;
             break;
         case circle:
             sourceSize *= 3.141526 / 4.0;
             break;
         case diamond:
-            sourceSize = 0.5;
+            sourceSize *= 0.5;
     }
 
     // Calculate sources
     this -> dens = flowRate / sourceSize;
-    this -> temp = temp;
+    this -> temp = sourceTemp;
     this -> xVel = 0.0;
     this -> yVel = 0.0;
 

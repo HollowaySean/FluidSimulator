@@ -8,7 +8,7 @@
             "name": "g++ - Build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "program": "${workspaceFolder}/bin/FluidSimulator",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

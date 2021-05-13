@@ -9,10 +9,9 @@
                 "src/*.cpp",
                 "-o",
                 "bin/FluidSimulator",
-                "-lglut",
-                "-lGLU",
                 "-lGL",
-                "-lGLEW"
+                "-lGLEW",
+                "-lglfw"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

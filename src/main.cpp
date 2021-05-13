@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <GL/glew.h>
-#include <GL/freeglut.h>
+#include <GLFW/glfw3.h>
 
 // Project header files
 #include "SimTools.h"
@@ -49,23 +49,23 @@ int main(int argc, char** argv){
 
     // Set up sources
     sources.CreateGasSource(SimSource::circle, 0.5, 2000.0, 0.0, -0.75, 0.075);
-    // sources.CreateWindSource(0.0, 50.0, -0.5, 0.5);
-    // sources.CreateWindSource(0.0, 50.0, -0.5, 0.25);
-    // sources.CreateHeatSource(SimSource::circle, 1500., 0.0, -1.0, 0.1);
-    // sources.CreateEnergySource(SimSource::circle, 5000.0, airTemp, airDensity, 0.0, -0.75, 0.08);
     sources.CreateWindBoundary(0.025);
     sources.UpdateSources();
 
 
 
     // Set up OpenGL state
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-    glutInitWindowSize(cellSize * N, cellSize * N);
-    glutInitWindowPosition(100, 100);
-    glutCreateWindow("Fluid Simulator");
+    glfwInit();
+    // glutInit(&argc, argv);
+    // glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    // glutInitWindowSize(cellSize * N, cellSize * N);
+    // glutInitWindowPosition(100, 100);
+    // wd = glutCreateWindow("Fluid Simulator");
+
+    // glutKeyboardFunc(kbd);
+
     glClearColor(0.0,0.0,0.0,0.0);
-    gluOrtho2D(0, cellSize * N, 0, cellSize * N);
+    glOrtho(0, cellSize * N, 0, cellSize * N, -1., 1.);
 
     // Set up GLEW environment
     GLenum err = glewInit();
@@ -188,5 +188,5 @@ void DisplayGLWindow(SimState currentState, int cellSize)
     }
 
     // Complete OpenGL loop
-    glutSwapBuffers();
+    // glutSwapBuffers();
 }

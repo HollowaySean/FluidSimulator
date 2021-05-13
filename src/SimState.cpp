@@ -10,7 +10,6 @@ using namespace std;
 
 // Macros
 #define ind(i,j) ((i) + (N + 2)*(j))
-#define indN(i,j,N) ((i) + ((N) + 2)*(j))
 #define swap(x0, x) {float *tmp = x0; x0 = x; x = tmp;}
 
 
@@ -72,6 +71,12 @@ void SimState::SimulationStep(float timeStep)
     DensityStep(timeStep);
     if(params.temperatureOn)
         TemperatureStep(timeStep);
+}
+
+// Set boundaries open/closed
+void SimState::SetBoundaryClosed(bool isClosed)
+{
+    params.closedBoundaries = isClosed;
 }
 
 // Property accessors
@@ -193,19 +198,29 @@ void SimState::AddConstantSource(float * x, float s, float dt)
 // Evaluate boundary conditions
 void SimState::SetBoundary(int b, float * x)
 {
-    for(int i = 1; i <= N; i++){
-        x[ind(0,  i)] = (b == 1) ? -x[ind(1,i)] : x[ind(1,i)];
-        x[ind(N+1,i)] = (b == 1) ? -x[ind(N,i)] : x[ind(N,i)];
-        x[ind(i,  0)] = (b == 2) ? -x[ind(i,1)] : x[ind(i,1)];
-        x[ind(i,N+1)] = (b == 2) ? -x[ind(i,N)] : x[ind(i,N)];
+    float xMod, yMod;
+
+    switch(b){
+        case -1: xMod =  0.; yMod =  0.; break;
+        case  0: xMod =  1.; yMod =  1.; break;
+        case  1: xMod = -1.; yMod =  1.; break;
+        case  2: xMod =  1.; yMod = -1.; break;
     }
+
+    for(int i = 1; i <= N; i++){
+        x[ind(0,  i)] = xMod * x[ind(1,i)];
+        x[ind(N+1,i)] = xMod * x[ind(N,i)];
+        x[ind(i,  0)] = yMod * x[ind(i,1)];
+        x[ind(i,N+1)] = yMod * x[ind(i,N)];
+    }
+
     x[ind(0,    0)] = 0.5 * (x[ind(1,  0)] + x[ind(0,  1)]);
     x[ind(0,  N+1)] = 0.5 * (x[ind(1,N+1)] + x[ind(0,  N)]);
     x[ind(N+1,  0)] = 0.5 * (x[ind(N,  0)] + x[ind(N+1,1)]);
     x[ind(N+1,N+1)] = 0.5 * (x[ind(N,N+1)] + x[ind(N+1,N)]);
 }
 
-// Improved diffusion (DEPRECATE OTHERS WHEN COMPLETE)
+// Improved diffusion
 void SimState::DiffuseImproved(int b, float * x, float * x0, float (*diff)(int, SimParams, SimFields), float dt)
 {
     // Adjust a to account for cell size and timestep
@@ -238,14 +253,25 @@ void SimState::Dissipate(float * x, float eqVal, float rate, float dt)
     float d = rate * dt;
 
     // Loop through grid elements
-    for(int i = 1; i <= N; i++){
-        for(int j = 1; j <= N; j++){
+    for(int i = 0; i < size; i++){
 
-            // Decay temperatures
-            x[ind(i,j)] -= d * (x[ind(i,j)] - eqVal);
-        }
+        // Decay temperatures
+        x[i] -= d * (x[i] - eqVal);
     }
+}
 
+// Dissipate density based on temperature
+void SimState::DissipateWithFallOff(float * x, float eqVal, float rate, float fallOff, float dt)
+{
+    // Adjust for time scale
+    float d = rate * dt;
+
+    // Loop through grid elements
+    for(int i = 0; i < size; i++){
+
+        // Decay temperatures
+        x[i] -= d * (1. - fallOff * (fields.temp[i] - params.airTemp)) * (x[i] - eqVal) ;
+    }
 }
 
 // Perform advection step
@@ -364,14 +390,20 @@ void SimState::DensityStep(float dt)
 
     // Diffuse by Fick's law
     swap(fields.dens_prev, fields.dens); 
-    DiffuseImproved(0, fields.dens, fields.dens_prev, SimState::AdjustedMassDiffusivity, dt);
+    DiffuseImproved(params.closedBoundaries ? 0 : -1, fields.dens, fields.dens_prev, SimState::AdjustedMassDiffusivity, dt);
     swap(fields.dens_prev, fields.dens); 
 
     // Dissipate smoke
-    Dissipate(fields.dens, 0.0, params.densDecay, dt);
+    if(params.densDecay > 0.0){
+        if(params.tempFactor > 0.0){
+            DissipateWithFallOff(fields.dens, 0.0, params.densDecay, params.tempFactor, dt);
+        }else{
+            Dissipate(fields.dens, 0.0, params.densDecay, dt);
+        }
+    }
 
     // Advect along streamlines
-    Advect(0, fields.dens, fields.dens_prev, fields.xVel, fields.yVel, dt);
+    Advect(params.closedBoundaries ? 0 : -1, fields.dens, fields.dens_prev, fields.xVel, fields.yVel, dt);
 }
 
 // Collected methods for velocity calculation
@@ -387,13 +419,13 @@ void SimState::VelocityStep(float dt)
     }
 
     // Perform Hodge projection to remove divergence
-    HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
+    // HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
 
     // Perform velocity diffusion
     swap(fields.xVel_prev, fields.xVel);
-    DiffuseImproved(1, fields.xVel, fields.xVel_prev, SimState::AdjustedViscosity, dt);
+    DiffuseImproved(params.closedBoundaries ? 1 : 0, fields.xVel, fields.xVel_prev, SimState::AdjustedViscosity, dt);
     swap(fields.yVel_prev, fields.yVel);
-    DiffuseImproved(2, fields.yVel, fields.yVel_prev, SimState::AdjustedViscosity,dt);
+    DiffuseImproved(params.closedBoundaries ? 2 : 0, fields.yVel, fields.yVel_prev, SimState::AdjustedViscosity,dt);
 
     // Perform Hodge projection to remove divergence
     HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
@@ -401,8 +433,8 @@ void SimState::VelocityStep(float dt)
     // Perform velocity advection
     swap(fields.xVel_prev, fields.xVel);
     swap(fields.yVel_prev, fields.yVel);
-    Advect(1, fields.xVel, fields.xVel_prev, fields.xVel_prev, fields.yVel_prev, dt);
-    Advect(2, fields.yVel, fields.yVel_prev, fields.xVel_prev, fields.yVel_prev, dt);
+    Advect(params.closedBoundaries ? 1 : 0, fields.xVel, fields.xVel_prev, fields.xVel_prev, fields.yVel_prev, dt);
+    Advect(params.closedBoundaries ? 2 : 0, fields.yVel, fields.yVel_prev, fields.xVel_prev, fields.yVel_prev, dt);
 
     // Perform Hodge projection again
     HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
@@ -420,7 +452,9 @@ void SimState::TemperatureStep(float dt)
     swap(fields.temp_prev, fields.temp);
 
     // Perform cooling due to surrounding air
-    Dissipate(fields.temp, params.airTemp, params.tempDecay, dt);
+    if(params.tempDecay > 0.0){
+        Dissipate(fields.temp, params.airTemp, params.tempDecay, dt);
+    }
 
     // Advect along streamlines
     Advect(0, fields.temp, fields.temp_prev, fields.xVel, fields.yVel, dt);
@@ -442,6 +476,7 @@ SimParams::SimParams()
     massRatio = 0.;
 
     // Default options
+    closedBoundaries = true;
     gravityOn = false;
     temperatureOn = false;
     advancedCoefficients = false;
@@ -457,6 +492,7 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion)
     this -> diff = diffusion;
 
     // Default options
+    closedBoundaries = true;
     gravityOn = false;
     temperatureOn = false;
     advancedCoefficients = false;
@@ -465,7 +501,8 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion)
 }
 
 // Constructor for buoyant simulation
-SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio)
+SimParams::SimParams(float lengthScale, float viscosity, float diffusion, 
+                     float gravity, float airDensity, float massRatio)
 {
     // Set input parameters
     this -> lengthScale = lengthScale;
@@ -476,6 +513,7 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
     this -> massRatio = massRatio;
 
     // Default options
+    closedBoundaries = true;
     gravityOn = true;
     temperatureOn = false;
     advancedCoefficients = false;
@@ -484,7 +522,9 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
 }
 
 // Constructor for full thermal simulation
-SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio, float airTemp, float diffTemp)
+SimParams::SimParams(float lengthScale, float viscosity, float diffusion, 
+                     float gravity, float airDensity, float massRatio, 
+                     float airTemp, float diffTemp)
 {
     // Set input parameters
     this -> lengthScale = lengthScale;
@@ -497,6 +537,7 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
     this -> diffTemp = diffTemp;
 
     // Default options
+    closedBoundaries = true;
     gravityOn = true;
     temperatureOn = true;
     advancedCoefficients = true;
@@ -505,7 +546,10 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
 }
 
 // Constructor for full thermal simulation
-SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float gravity, float airDensity, float massRatio, float airTemp, float diffTemp, float densDecay, float tempDecay)
+SimParams::SimParams(float lengthScale, float viscosity, float diffusion, 
+                     float gravity, float airDensity, float massRatio, 
+                     float airTemp, float diffTemp, 
+                     float densDecay, float tempFactor, float tempDecay)
 {
     // Set input parameters
     this -> lengthScale = lengthScale;
@@ -517,9 +561,11 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion, float 
     this -> airTemp = airTemp;
     this -> diffTemp = diffTemp;
     this -> densDecay = densDecay;
+    this -> tempFactor = tempFactor;
     this -> tempDecay = tempDecay;
 
     // Default options
+    closedBoundaries = true;
     gravityOn = true;
     temperatureOn = true;
     advancedCoefficients = true;
@@ -548,117 +594,6 @@ SimFields::SimFields(int size)
     yVel_source   = new float[size];
     dens_source   = new float[size];
     temp_source   = new float[size];
-}
-
-
-
-/// SIMSOURCES METHODS ///
-
-// Constructor, taking SimState reference as input
-SimSource::SimSource(SimState* simState)
-{
-    // Save pointer to SimState
-    this -> simState = simState;
-
-    // Retrieve parameters from SimState
-    N           = simState -> GetN();
-    size        = simState -> GetSize();
-    lengthScale = simState -> params.lengthScale;
-
-    // Retrieve pointers to source arrays
-    xVel = simState -> fields.xVel_source;
-    yVel = simState -> fields.yVel_source;
-    dens = simState -> fields.dens_source;
-    temp = simState -> fields.temp_source;
-}
-
-// Update sources in SimState object
-void SimSource::UpdateSources()
-{
-    // Loop through list of sources
-    for (const Source* source : sources){
-
-        // Loop through source indices
-        for(const int & index : source -> indices){
-
-            xVel[index] += source -> xVel;
-            yVel[index] += source -> yVel;
-            dens[index] += source -> dens;
-            temp[index] = max(temp[index], source -> temp);
-        }
-    }
-}
-
-// Calculate indices covered by shape
-void SimSource::Source::SetIndices(int N, Shape shape, float xCenter, float yCenter, float radius)
-{
-    float xCInd = float(N + 2) * (xCenter + 1.0) / 2.0;
-    float yCInd = float(N + 2) * (yCenter + 1.0) / 2.0;
-    float rInd  = N * radius / 2.0;
-
-    float xMinInd = max(floor(xCInd - rInd), 0.0f);
-    float xMaxInd = min(ceil( xCInd + rInd), float(N+2));
-    float yMinInd = max(floor(yCInd - rInd), 0.0f);
-    float yMaxInd = min(ceil( yCInd + rInd), float(N+2));
-
-
-    for(float x = xMinInd; x <= xMaxInd; x++){
-        for(float y = yMinInd; y <= yMaxInd; y++){
-
-            switch(shape){
-
-                case square:
-                    indices.push_back(indN(int(x), float(y), N));
-                    break;
-
-                case circle:
-                    if((x - xCInd) * (x - xCInd) + (y - yCInd) * (y - yCInd) <= rInd * rInd){
-                        indices.push_back(indN(int(x), float(y), N));
-                    }
-                    break;
-
-                case diamond:
-                    if(abs(x - xCInd) + abs(y - yCInd) <= rInd ){
-                        indices.push_back(indN(int(x), float(y), N));
-                    }
-                    break;
-            }
-        }
-    }
-}
-
-// Create gas source and add to source list
-void SimSource::CreateGasSource(Shape shape, float flowRate, float temp, float xCenter, float yCenter, float radius)
-{
-    GasSource* newGasSource = new GasSource(N, lengthScale, shape, flowRate, temp, xCenter, yCenter, radius);
-    Source* newSource = newGasSource;
-    sources.push_back(newSource);
-}
-
-// Gas source constructor
-SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flowRate, float sourceTemp, float xCenter, float yCenter, float radius)
-{
-    // Calculate aperture size
-    float sourceSize = radius * radius * lengthScale * lengthScale;
-    switch(shape){
-        case square:
-            sourceSize *= 1.0;
-            break;
-        case circle:
-            sourceSize *= 3.141526 / 4.0;
-            break;
-        case diamond:
-            sourceSize *= 0.5;
-    }
-
-    // Calculate sources
-    this -> dens = flowRate / sourceSize;
-    this -> temp = sourceTemp;
-    this -> xVel = 0.0;
-    this -> yVel = 0.0;
-
-    // Set source indices
-    SetIndices(N, shape, xCenter, yCenter, radius);
 }
 
 

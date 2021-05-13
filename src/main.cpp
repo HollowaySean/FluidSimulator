@@ -1,11 +1,10 @@
 // Pre-processor include statements
-#include <chrono>
-#include <thread>
 #include <iostream>
 #include <cmath>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include "SimState.h"
+
+// Project header files
 #include "SimTools.h"
 
 // Namespaces
@@ -20,31 +19,44 @@ void DisplayGLWindow(SimState, int);
 int main(int argc, char** argv){
 
     // Window option
-    int N = 80;
+    int N = 75;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
-    int size = (N + 2) * (N + 2);
     int maxFrameRate = 25;
 
     // Declarations
     float lengthScale = 1.0;        // Side length of the box
+    float timeScale = 1.0;          // Simulation speed in simulation seconds / real seconds
     float visc = 0.000018;          // Dynamic viscosity at air temperature
     float diff = 0.000028;          // Diffusion constant at air temperature
     float grav = -9.8;              // Gravitational force
     float airDensity = 1.29235;     // Density of background air
-    // float massRatio = 1.608;       // Ratio of molar mass of air / molar mass of gas
-    float massRatio = 0.54;       // Ratio of molar mass of air / molar mass of gas
+    // float massRatio = 1.608;        // Ratio of molar mass of air / molar mass of gas
+    float massRatio = 0.54;         // Ratio of molar mass of air / molar mass of gas
     float airTemp = 300.0;          // Temperature of background air
     float diffTemp = 0.00002338;    // Thermal diffusivity of gas
-    float densDecay = 100.0;        // Rate of decay for density field
-    float tempDecay = 0.0;            // Rate of decay for temperature field
+    float densDecay = 0.0;          // Rate of decay for density field
+    float tempFactor = 0.0;         // Linear decrease in density decay per degree temperature above airTemp
+    float tempDecay = 0.0;          // Rate of decay for temperature field
 
 
 
     // Initialize state
-    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, densDecay, tempDecay);
+    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, densDecay, tempFactor, tempDecay);
     SimState testState = SimState(N, params);
+    testState.SetBoundaryClosed(false);
     SimSource sources = SimSource(&testState);
+
+    // Set up sources
+    sources.CreateGasSource(SimSource::circle, 0.5, 2000.0, 0.0, -0.75, 0.075);
+    // sources.CreateWindSource(0.0, 50.0, -0.5, 0.5);
+    // sources.CreateWindSource(0.0, 50.0, -0.5, 0.25);
+    // sources.CreateHeatSource(SimSource::circle, 1500., 0.0, -1.0, 0.1);
+    // sources.CreateEnergySource(SimSource::circle, 5000.0, airTemp, airDensity, 0.0, -0.75, 0.08);
+    sources.CreateWindBoundary(0.025);
+    sources.UpdateSources();
+
+
 
     // Set up OpenGL state
     glutInit(&argc, argv);
@@ -63,15 +75,10 @@ int main(int argc, char** argv){
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
     
 
-    // Set up sources
-    sources.CreateGasSource(SimSource::circle, 0.05, 1500.0, 0.0, -0.75, 0.05);
-    sources.UpdateSources();
 
     // Initialize timers
     SimTimer timer = SimTimer(maxFrameRate);
     timer.StartSimulation();
-
-
 
     // Simulation loop
     while(true)
@@ -83,7 +90,7 @@ int main(int argc, char** argv){
         DisplayGLWindow(testState, cellSize);
 
         // Update simulation state
-        testState.SimulationStep(timer.DeltaTime());
+        testState.SimulationStep(timeScale * timer.DeltaTime());
 
         // Sleep until frame is complete
         timer.EndFrame();
@@ -102,12 +109,15 @@ int main(int argc, char** argv){
 float LerpColor(float densIn, float tempIn, int channel)
 {
     // Parameters
-    float bMod = 0.000000000001;
+    float bMod = 0.0000000000001;
+    // float bMod = 1.0;
 
     float t = (tempIn - 1900.0) / (3200. - 1900.);
     float output = 0.0;
 
     float intensity = bMod * densIn * tempIn * tempIn * tempIn * tempIn;
+    // float intensity = bMod * densIn;
+
     if(intensity > 1.0){ intensity = 1.0; }
     float color;
 
@@ -124,6 +134,7 @@ float LerpColor(float densIn, float tempIn, int channel)
     }
 
     output = intensity * color;
+    // output = intensity;
 
     return output;
 }
@@ -142,22 +153,16 @@ void DisplayGLWindow(SimState currentState, int cellSize)
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Loop through each grid cell and draw a polygon
-    for(int x = 0; x <= N - 1; x++){
-        for(int y = 0; y <= N - 1; y++){
+    for(int x = 1; x <= N; x++){
+        for(int y = 1; y <= N; y++){
 
             glBegin(GL_QUADS);
 
-            glColor3f(  LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  1), 
-                        LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  2), 
-                        LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  3));
-            glVertex2i( pixelsPerSquare * x,     
-                        pixelsPerSquare * y);
-
-            glColor3f(  LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  1), 
-                        LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  2), 
-                        LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  3));
-            glVertex2i( pixelsPerSquare * (x+1), 
-                        pixelsPerSquare * y);
+            glColor3f(  LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 1), 
+                        LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 2), 
+                        LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 3));
+            glVertex2i( pixelsPerSquare * (x),     
+                        pixelsPerSquare * (y+1));
 
             glColor3f(  LerpColor(density[ind(x+1,y+1,N)], temperature[ind(x+1,y+1,N)], 1), 
                         LerpColor(density[ind(x+1,y+1,N)], temperature[ind(x+1,y+1,N)], 2), 
@@ -165,11 +170,17 @@ void DisplayGLWindow(SimState currentState, int cellSize)
             glVertex2i( pixelsPerSquare * (x+1), 
                         pixelsPerSquare * (y+1));
 
-            glColor3f(  LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 1), 
-                        LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 2), 
-                        LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 3));
-            glVertex2i( pixelsPerSquare * x,     
-                        pixelsPerSquare * (y+1));
+            glColor3f(  LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  1), 
+                        LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  2), 
+                        LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  3));
+            glVertex2i( pixelsPerSquare * (x+1), 
+                        pixelsPerSquare * (y));
+
+            glColor3f(  LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  1), 
+                        LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  2), 
+                        LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  3));
+            glVertex2i( pixelsPerSquare * (x),     
+                        pixelsPerSquare * (y));
 
             glEnd();
             glFlush();

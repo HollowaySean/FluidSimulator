@@ -6,12 +6,16 @@
 
 // Project header files
 #include "SimTools.h"
+#include "Window.h"
 
 // Namespaces
 using namespace std;
 
 // Macros
 #define ind(i,j,N) ((i) + ((N) + 2)*(j))
+
+// Global objects
+GLFWwindow* window;
 
 // Function definition before main
 void DisplayGLWindow(SimState, int);
@@ -55,17 +59,19 @@ int main(int argc, char** argv){
 
 
     // Set up OpenGL state
-    glfwInit();
-    // glutInit(&argc, argv);
-    // glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-    // glutInitWindowSize(cellSize * N, cellSize * N);
-    // glutInitWindowPosition(100, 100);
-    // wd = glutCreateWindow("Fluid Simulator");
+    if(!glfwInit()){
+        fprintf(stderr, "GLFW failed to init.");
+        return(-1); 
+    }
+    glfwSetErrorCallback(ErrorCallback);
 
-    // glutKeyboardFunc(kbd);
-
-    glClearColor(0.0,0.0,0.0,0.0);
-    glOrtho(0, cellSize * N, 0, cellSize * N, -1., 1.);
+    // Set up main window
+    window = glfwCreateWindow(cellSize * N, cellSize * N, "Fluid Simulator", NULL, NULL);
+    if(!window){ 
+        fprintf(stderr, "GLFW failed to create window."); 
+        return(-2); 
+    }
+    glfwMakeContextCurrent(window);
 
     // Set up GLEW environment
     GLenum err = glewInit();
@@ -73,6 +79,10 @@ int main(int argc, char** argv){
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+
+    // GLFW test functions, etc.
+    glViewport(0, 0, cellSize * N, cellSize * N);
+    glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
     
 
 
@@ -81,8 +91,9 @@ int main(int argc, char** argv){
     timer.StartSimulation();
 
     // Simulation loop
-    while(true)
+    while(!glfwWindowShouldClose(window))
     {
+        /*
         // Declare beginning of frame
         timer.StartFrame();
 
@@ -100,7 +111,13 @@ int main(int argc, char** argv){
 
         // Exit after 1000 frames
         if(timer.CurrentFrame() == 10000){ break; }
+        */
+
+       WindowTest(window);
     }
+
+    // End GLFW context
+    glfwTerminate();
 
     // Exit code
     return 0;
@@ -188,5 +205,7 @@ void DisplayGLWindow(SimState currentState, int cellSize)
     }
 
     // Complete OpenGL loop
-    // glutSwapBuffers();
+    ProcessInput(window);
+    glfwSwapBuffers(window);
+    glfwPollEvents();
 }

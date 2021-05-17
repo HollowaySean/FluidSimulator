@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <GL/freeglut.h>
 
 // Project header files
 #include "headers/SimSource.h"

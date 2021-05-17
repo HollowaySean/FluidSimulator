@@ -1,28 +1,16 @@
 // Include statements
 #include "headers/Window.h"
+#include "headers/Shader.h"
 
 // Handles for OpenGL buffers and shaders
-unsigned int VAO;
-unsigned int EBO;
-unsigned int shaderProgram;
+unsigned int VAO, EBO;
+unsigned int densTex, tempTex;
+Shader* shader;
 
-// Shader definitions
-const char *vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
-
-const char *fragmentShaderSource = "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\0";
-
-
-// Callbacks for OpenGL
+// Window size properties
+int N;
+int size;
+int cellSize;
 
 // OpenGL Error Callback
 void ErrorCallback(int error, const char* description)
@@ -44,8 +32,13 @@ void ProcessInput(GLFWwindow* window)
 }
 
 // OpenGL environment and background setup
-GLFWwindow* WindowSetup(int xSize, int ySize)
+GLFWwindow* WindowSetup(int N_in, int cellSize_in)
 {
+    // Save parameters
+    N = N_in + 2;
+    size = N * N;
+    cellSize = cellSize_in;
+
     // Set up OpenGL state
     if(!glfwInit()){
         fprintf(stderr, "GLFW failed to init.");
@@ -58,6 +51,8 @@ GLFWwindow* WindowSetup(int xSize, int ySize)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Set up main window
+    int xSize = (N + 2) * cellSize;
+    int ySize = xSize;
     GLFWwindow* window = glfwCreateWindow(xSize, ySize, "Fluid Simulator", NULL, NULL);
     if(window == NULL){ 
         fprintf(stderr, "GLFW failed to create window."); 
@@ -76,28 +71,10 @@ GLFWwindow* WindowSetup(int xSize, int ySize)
     glViewport(0, 0, xSize, ySize);
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 
-    // Vertex shader setup
-    unsigned int vertexShader;
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // Fragment shader setup
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // Shader program setup
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // Activate program and delete shaders
-    glUseProgram(shaderProgram);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    // Set up shader
+    shader = new Shader(
+        "./src/shaders/simpleVertex.vs", 
+        "./src/shaders/blackbody.fs");
 
     // Create Vertex Attribute Object
     glGenVertexArrays(1, &VAO);
@@ -105,15 +82,22 @@ GLFWwindow* WindowSetup(int xSize, int ySize)
 
     // Copy vertices of full sized quad into buffer
     float vertices[] = {
-         1.0f,  1.0f, 0.0f,
-         1.0f, -1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f
+        // Position             // UV coordinates
+         1.0f,  1.0f, 0.0f,     1.0f, 1.0f,
+         1.0f, -1.0f, 0.0f,     1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,     0.0f, 1.0f
     };
     unsigned int VBO;
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Set up vertex attributes
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // Copy indices into element buffer
     unsigned int indices[] = {
@@ -124,33 +108,55 @@ GLFWwindow* WindowSetup(int xSize, int ySize)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    // Set up vertex attributes
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    // Blank data for initial texture (revise?)
+    float blank[size] = {0.0f};
 
-    // Set up texture mapping
-    float texCoords[] = {
-        1.0f, 1.0f,
-        1.0f, 0.0f,
-        0.0f, 0.0f,
-        0.0f, 1.0f
-    };
+    // Set up density texture
+    glGenTextures(1, &densTex);
+    glBindTexture(GL_TEXTURE_2D, densTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, N, 0, GL_RED, GL_FLOAT, blank);
+
+    // Set up temperature texture
+    glGenTextures(1, &tempTex);
+    glBindTexture(GL_TEXTURE_2D, tempTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, N, 0, GL_RED, GL_FLOAT, blank);
+
+    // Assign texture units
+    shader -> Use();
+    glUniform1i(glGetUniformLocation(shader->ID, "densTex"), 0);
+    glUniform1i(glGetUniformLocation(shader->ID, "densTex"), 0);
 
     return window;
 }
 
-void WindowRenderLoop(GLFWwindow* window)
+void WindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
 {
     // Take keyboard and mouse input
     ProcessInput(window);
+    // Activate shader
+    shader -> Use();
 
-    // Draw triangles for background
-    glUseProgram(shaderProgram);
+    // Bind texture
+    glActiveTexture(GL_TEXTURE0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, N, 0, GL_RED, GL_FLOAT, density);
+    glBindTexture(GL_TEXTURE_2D, densTex);
+    glActiveTexture(GL_TEXTURE1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, N, 0, GL_RED, GL_FLOAT, temperature);
+    glBindTexture(GL_TEXTURE_2D, tempTex);
+
+    // Render quad of triangles
     glBindVertexArray(VAO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // End of frame events

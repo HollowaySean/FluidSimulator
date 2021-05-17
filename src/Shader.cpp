@@ -3,6 +3,8 @@
 
 // Include statements
 #include "headers/Shader.h"
+#include <errno.h>
+#include <string.h>
 
 // Constructor
 Shader::Shader(const char* vertexPath, const char* fragmentPath)
@@ -23,7 +25,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
         std::stringstream vShaderStream, fShaderStream;
         // read file's buffer contents into streams
         vShaderStream << vShaderFile.rdbuf();
-        fShaderStream << fShaderFile.rdbuf();		
+        fShaderStream << fShaderFile.rdbuf();	
         // close file handlers
         vShaderFile.close();
         fShaderFile.close();
@@ -33,6 +35,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
     }
     catch(std::ifstream::failure e)
     {
+        std::cerr << "Error: " << strerror(errno) << std::endl;
         std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
     }
     const char* vShaderCode = vertexCode.c_str();
@@ -83,6 +86,9 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 }
+
+// Default constructor, for global initialization
+Shader::Shader(){}
 
 // Method to use assigned shader program
 void Shader::Use()

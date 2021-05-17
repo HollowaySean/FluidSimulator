@@ -10,7 +10,7 @@
 #include <iostream>
 
 GLFWwindow* WindowSetup(int xSize, int ySize);
-void WindowRenderLoop(GLFWwindow* window);
+void WindowRenderLoop(GLFWwindow* window, float* density, float* temperature);
 
 void ErrorCallback(int error, const char* description);
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height);

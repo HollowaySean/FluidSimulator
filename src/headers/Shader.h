@@ -21,6 +21,7 @@ class Shader
         unsigned int ID;
 
         // Constructor
+        Shader();
         Shader(const char* vertexPath, const char* fragmentPath);
 
         // Activate shader

@@ -11,7 +11,8 @@
                 "bin/FluidSimulator",
                 "-lGL",
                 "-lGLEW",
-                "-lglfw"
+                "-lglfw",
+                "-lGLU"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

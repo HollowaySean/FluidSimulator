@@ -14,9 +14,6 @@ using namespace std;
 // Macros
 #define ind(i,j,N) ((i) + ((N) + 2)*(j))
 
-// Global objects
-GLFWwindow* window;
-
 // Function definition before main
 void DisplayGLWindow(SimState, int);
 
@@ -56,35 +53,8 @@ int main(int argc, char** argv){
     sources.CreateWindBoundary(0.025);
     sources.UpdateSources();
 
-
-
-    // Set up OpenGL state
-    if(!glfwInit()){
-        fprintf(stderr, "GLFW failed to init.");
-        return(-1); 
-    }
-    glfwSetErrorCallback(ErrorCallback);
-
-    // Set up main window
-    window = glfwCreateWindow(cellSize * N, cellSize * N, "Fluid Simulator", NULL, NULL);
-    if(!window){ 
-        fprintf(stderr, "GLFW failed to create window."); 
-        return(-2); 
-    }
-    glfwMakeContextCurrent(window);
-
-    // Set up GLEW environment
-    GLenum err = glewInit();
-    if(GLEW_OK != err){
-        fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-    }
-    fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-
-    // GLFW test functions, etc.
-    glViewport(0, 0, cellSize * N, cellSize * N);
-    glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-    
-
+    // Set up window
+    GLFWwindow* window = WindowSetup(cellSize * N, cellSize * N);
 
     // Initialize timers
     SimTimer timer = SimTimer(maxFrameRate);
@@ -93,12 +63,13 @@ int main(int argc, char** argv){
     // Simulation loop
     while(!glfwWindowShouldClose(window))
     {
-        /*
+        
         // Declare beginning of frame
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-        DisplayGLWindow(testState, cellSize);
+        // DisplayGLWindow(testState, cellSize);
+       WindowRenderLoop(window);
 
         // Update simulation state
         testState.SimulationStep(timeScale * timer.DeltaTime());
@@ -111,9 +82,8 @@ int main(int argc, char** argv){
 
         // Exit after 1000 frames
         if(timer.CurrentFrame() == 10000){ break; }
-        */
+        
 
-       WindowTest(window);
     }
 
     // End GLFW context
@@ -205,7 +175,7 @@ void DisplayGLWindow(SimState currentState, int cellSize)
     }
 
     // Complete OpenGL loop
-    ProcessInput(window);
-    glfwSwapBuffers(window);
-    glfwPollEvents();
+    // ProcessInput(window);
+    // glfwSwapBuffers(window);
+    // glfwPollEvents();
 }

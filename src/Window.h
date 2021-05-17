@@ -4,7 +4,8 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-void WindowTest(GLFWwindow* window);
+GLFWwindow* WindowSetup(int xSize, int ySize);
+void WindowRenderLoop(GLFWwindow* window);
 
 void ErrorCallback(int error, const char* description);
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height);

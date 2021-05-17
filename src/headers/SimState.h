@@ -1,5 +1,8 @@
 /* Header file for simulation state class */
 
+// Preprocessor statements
+#ifndef SIMSTATE_H
+#define SIMSTATE_H
 
 // Structure to hold onto simulation properties and physical constants
 struct SimParams
@@ -133,3 +136,6 @@ class SimState
 
 // Method to display simulation state in terminal
 void DisplayGrid(SimState stateInput, float minimum);
+
+// Preprocessor close statement
+#endif

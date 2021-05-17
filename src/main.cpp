@@ -5,7 +5,10 @@
 #include <GL/freeglut.h>
 
 // Project header files
-#include "SimTools.h"
+#include "headers/SimSource.h"
+#include "headers/SimState.h"
+#include "headers/SimTimer.h"
+#include "headers/Window.h"
 
 // Namespaces
 using namespace std;
@@ -13,16 +16,13 @@ using namespace std;
 // Macros
 #define ind(i,j,N) ((i) + ((N) + 2)*(j))
 
-// Function definition before main
-void DisplayGLWindow(SimState, int);
-
 int main(int argc, char** argv){
 
     // Window option
-    int N = 75;
+    int N = 100;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
-    int maxFrameRate = 25;
+    int maxFrameRate = 100;
 
     // Declarations
     float lengthScale = 1.0;        // Side length of the box
@@ -44,50 +44,30 @@ int main(int argc, char** argv){
     // Initialize state
     SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, densDecay, tempFactor, tempDecay);
     SimState testState = SimState(N, params);
-    testState.SetBoundaryClosed(false);
     SimSource sources = SimSource(&testState);
 
     // Set up sources
-    sources.CreateGasSource(SimSource::circle, 0.5, 2000.0, 0.0, -0.75, 0.075);
-    // sources.CreateWindSource(0.0, 50.0, -0.5, 0.5);
-    // sources.CreateWindSource(0.0, 50.0, -0.5, 0.25);
-    // sources.CreateHeatSource(SimSource::circle, 1500., 0.0, -1.0, 0.1);
-    // sources.CreateEnergySource(SimSource::circle, 5000.0, airTemp, airDensity, 0.0, -0.75, 0.08);
+    testState.SetBoundaryClosed(false);
+    sources.CreateGasSource(SimSource::circle, 0.5, 5000.0, 0.0, -0.75, 0.075);
     sources.CreateWindBoundary(0.025);
     sources.UpdateSources();
 
-
-
-    // Set up OpenGL state
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-    glutInitWindowSize(cellSize * N, cellSize * N);
-    glutInitWindowPosition(100, 100);
-    glutCreateWindow("Fluid Simulator");
-    glClearColor(0.0,0.0,0.0,0.0);
-    gluOrtho2D(0, cellSize * N, 0, cellSize * N);
-
-    // Set up GLEW environment
-    GLenum err = glewInit();
-    if(GLEW_OK != err){
-        fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-    }
-    fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-    
-
+    // Set up window
+    GLFWwindow* window = WindowSetup(N, cellSize);
 
     // Initialize timers
     SimTimer timer = SimTimer(maxFrameRate);
     timer.StartSimulation();
 
     // Simulation loop
-    while(true)
+    while(!glfwWindowShouldClose(window))
     {
+        
         // Declare beginning of frame
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-        DisplayGLWindow(testState, cellSize);
+       WindowRenderLoop(window, testState.fields.dens, testState.fields.temp);
 
         // Update simulation state
         testState.SimulationStep(timeScale * timer.DeltaTime());
@@ -102,91 +82,9 @@ int main(int argc, char** argv){
         if(timer.CurrentFrame() == 10000){ break; }
     }
 
+    // End GLFW context
+    glfwTerminate();
+
     // Exit code
     return 0;
-}
-
-float LerpColor(float densIn, float tempIn, int channel)
-{
-    // Parameters
-    float bMod = 0.0000000000001;
-    // float bMod = 1.0;
-
-    float t = (tempIn - 1900.0) / (3200. - 1900.);
-    float output = 0.0;
-
-    float intensity = bMod * densIn * tempIn * tempIn * tempIn * tempIn;
-    // float intensity = bMod * densIn;
-
-    if(intensity > 1.0){ intensity = 1.0; }
-    float color;
-
-    switch(channel){
-        case 1:
-            color = 1.0;
-            break;
-        case 2:
-            color = t * (1.0 - 0.5765) + 0.5765;
-            break;
-        case 3:
-            color = t * (1.0 - 0.1608) + 0.1608;
-            break;
-    }
-
-    output = intensity * color;
-    // output = intensity;
-
-    return output;
-}
-
-void DisplayGLWindow(SimState currentState, int cellSize)
-{
-    // Set properties
-    int pixelsPerSquare = cellSize;
-    int N = currentState.GetN();
-
-    // Get density map
-    float * density = currentState.GetDensity();
-    float * temperature = currentState.GetTemperature();
-
-    // Clear OpenGL window
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // Loop through each grid cell and draw a polygon
-    for(int x = 1; x <= N; x++){
-        for(int y = 1; y <= N; y++){
-
-            glBegin(GL_QUADS);
-
-            glColor3f(  LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 1), 
-                        LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 2), 
-                        LerpColor(density[ind(x,y+1,N)], temperature[ind(x,y+1,N)], 3));
-            glVertex2i( pixelsPerSquare * (x),     
-                        pixelsPerSquare * (y+1));
-
-            glColor3f(  LerpColor(density[ind(x+1,y+1,N)], temperature[ind(x+1,y+1,N)], 1), 
-                        LerpColor(density[ind(x+1,y+1,N)], temperature[ind(x+1,y+1,N)], 2), 
-                        LerpColor(density[ind(x+1,y+1,N)], temperature[ind(x+1,y+1,N)], 3));
-            glVertex2i( pixelsPerSquare * (x+1), 
-                        pixelsPerSquare * (y+1));
-
-            glColor3f(  LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  1), 
-                        LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  2), 
-                        LerpColor(density[ind(x+1,y,N)], temperature[ind(x+1,y,N)],  3));
-            glVertex2i( pixelsPerSquare * (x+1), 
-                        pixelsPerSquare * (y));
-
-            glColor3f(  LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  1), 
-                        LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  2), 
-                        LerpColor(density[ind(x,y,N)], temperature[ind(x,y,N)],  3));
-            glVertex2i( pixelsPerSquare * (x),     
-                        pixelsPerSquare * (y));
-
-            glEnd();
-            glFlush();
-        }
-    }
-
-    // Complete OpenGL loop
-    glutSwapBuffers();
 }

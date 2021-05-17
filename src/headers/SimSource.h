@@ -1,4 +1,8 @@
 
+// Preprocessor statements
+#ifndef SIMSOURCE_H
+#define SIMSOURCE_H
+
 // Include statements
 #include <list>
 #include "SimState.h"
@@ -102,3 +106,6 @@ class SimSource
         // List of sources
         std::list<SimSource::Source*> sources;
 };
+
+// Closing preprocessor statement
+#endif

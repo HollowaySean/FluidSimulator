@@ -5,8 +5,10 @@
 #include <GLFW/glfw3.h>
 
 // Project header files
-#include "SimTools.h"
-#include "Window.h"
+#include "headers/SimSource.h"
+#include "headers/SimState.h"
+#include "headers/SimTimer.h"
+#include "headers/Window.h"
 
 // Namespaces
 using namespace std;
@@ -23,7 +25,7 @@ int main(int argc, char** argv){
     int N = 75;
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
-    int maxFrameRate = 25;
+    int maxFrameRate = 100;
 
     // Declarations
     float lengthScale = 1.0;        // Side length of the box

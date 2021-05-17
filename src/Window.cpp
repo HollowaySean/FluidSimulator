@@ -1,6 +1,7 @@
 // Include statements
-#include "Window.h"
+#include "headers/Window.h"
 
+// Handles for OpenGL buffers and shaders
 unsigned int VAO;
 unsigned int EBO;
 unsigned int shaderProgram;
@@ -20,22 +21,29 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\0";
 
+
+// Callbacks for OpenGL
+
+// OpenGL Error Callback
 void ErrorCallback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
 }
 
+// OpenGL Resize Callback
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
 
+// OpenGL input script
 void ProcessInput(GLFWwindow* window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
 
+// OpenGL environment and background setup
 GLFWwindow* WindowSetup(int xSize, int ySize)
 {
     // Set up OpenGL state
@@ -81,7 +89,6 @@ GLFWwindow* WindowSetup(int xSize, int ySize)
     glCompileShader(fragmentShader);
 
     // Shader program setup
-    // unsigned int shaderProgram;
     shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
@@ -93,7 +100,6 @@ GLFWwindow* WindowSetup(int xSize, int ySize)
     glDeleteShader(fragmentShader);
 
     // Create Vertex Attribute Object
-    // unsigned int VAO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
@@ -118,10 +124,20 @@ GLFWwindow* WindowSetup(int xSize, int ySize)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-
     // Set up vertex attributes
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    // Set up texture mapping
+    float texCoords[] = {
+        1.0f, 1.0f,
+        1.0f, 0.0f,
+        0.0f, 0.0f,
+        0.0f, 1.0f
+    };
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
 
     return window;
 }

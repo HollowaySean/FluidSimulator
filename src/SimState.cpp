@@ -1,7 +1,8 @@
 /* Function definition file for simulation state class */
 
+
 // Include header definition
-#include "SimState.h"
+#include "headers/SimState.h"
 
 // Includes and usings
 #include <iostream>

@@ -1,7 +1,7 @@
 /* Function definition file for simulation timers and counters */
 
 // Include header definition
-#include "SimTimer.h"
+#include "headers/SimTimer.h"
 
 // Includes and usings
 #include <chrono>

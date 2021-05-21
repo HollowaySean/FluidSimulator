@@ -11,5 +11,5 @@ uniform float bMod = 1.0;
 void main()
 {
     float texPoint = bMod * texture(densTex, TexCoord).x;
-    FragColor = vec4(texPoint, texPoint, texPoint, 1.0);
+    gl_FragColor = vec4(texPoint, texPoint, texPoint, 1.0);
 }

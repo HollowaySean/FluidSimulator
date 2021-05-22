@@ -12,9 +12,6 @@
 #include "headers/Window.h"
 #include "headers/StateLoader.h"
 
-// Namespaces
-using namespace std;
-
 int main(int argc, char** argv){
 
     // Window option

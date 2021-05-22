@@ -1,0 +1,18 @@
+{
+    "lengthScale" : 1.0,
+    "visc" : 0.000018,
+    "diff" : 0.000028,
+    "grav" : -9.8,
+    "airDensity" : 1.29235,
+    "massRatio" : 0.54,
+    "airTemp" : 300.0,
+    "diffTemp" : 0.0002338,
+    "densDecay" : 0.0,
+    "tempFactor" : 0.0,
+    "tempDecay" : 0.0,
+    "closedBoundaries" : false,
+    "advancedCoefficients" : true,
+    "gravityOn" : true,
+    "temperatureOn" : true,
+    "solverSteps" : 20
+}

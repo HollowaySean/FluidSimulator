@@ -10,6 +10,7 @@
 #include "headers/SimState.h"
 #include "headers/SimTimer.h"
 #include "headers/Window.h"
+#include "headers/StateLoader.h"
 
 // Namespaces
 using namespace std;
@@ -46,6 +47,10 @@ int main(int argc, char** argv){
     SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, densDecay, tempFactor, tempDecay);
     SimState testState = SimState(N, params);
     SimSource sources = SimSource(&testState);
+    // SimParams params;
+    // SimState testState = SimState(N, params);
+    // SimSource sources = SimSource(&testState);
+    // LoadState("./src/json/default.json", &testState, &params, &sources);
 
     // Set up sources
     testState.SetBoundaryClosed(false);

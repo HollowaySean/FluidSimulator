@@ -3,6 +3,7 @@
 #include <cmath>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include <nlohmann/json.hpp>
 
 // Project header files
 #include "headers/SimSource.h"

@@ -23,11 +23,17 @@ class SimSource
         SimState* simState;
 
         // Public methods
-        void CreateGasSource(    Shape shape, float flowRate, float sourceTemp, float xCenter, float yCenter, float radius);
-        void CreateWindSource(   float angle, float speed, float xCenter, float yCenter);
-        void CreateHeatSource(   Shape shape, float sourceTemp, float xCenter, float yCenter, float radius);
-        void CreateEnergySource( Shape shape, float flux, float referenceTemp, float referenceDensity, float xCenter, float yCenter, float radius);
+        void CreateGasSource(    Shape shape, float flowRate, float sourceTemp, 
+                                float xCenter, float yCenter, float radius);
+        void CreateWindSource(   float angle, float speed, 
+                                float xCenter, float yCenter);
+        void CreateHeatSource(   Shape shape, float sourceTemp, 
+                                float xCenter, float yCenter, float radius);
+        void CreateEnergySource( Shape shape, float flux, float referenceTemp, float referenceDensity, 
+                                float xCenter, float yCenter, float radius);
         void CreateWindBoundary( float speed );
+
+        void RemoveSourceAtPoint(float x, float y);
 
         // Update sim object
         void UpdateSources();
@@ -56,6 +62,8 @@ class SimSource
 
                 // Size of source
                 float radius;
+                float xCenter;
+                float yCenter;
 
                 // Public methods
                 void SetActive(bool isActive);
@@ -105,6 +113,9 @@ class SimSource
 
         // List of sources
         std::list<SimSource::Source*> sources;
+
+        // Protected methods
+        void RemoveSource(Source* source);
 };
 
 // Closing preprocessor statement

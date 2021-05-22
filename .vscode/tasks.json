@@ -12,7 +12,9 @@
                 "-lGL",
                 "-lGLEW",
                 "-lglfw",
-                "-lGLU"
+                "-lGLU",
+                "-I",
+                "lib"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

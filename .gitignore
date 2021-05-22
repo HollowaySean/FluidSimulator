@@ -1,6 +1,5 @@
-# Ignore build and lib dirs
+# Ignore build dir
 build
-lib/*
 
 # Ignore any binaries
 bin/*

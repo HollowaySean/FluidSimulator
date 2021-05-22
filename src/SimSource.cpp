@@ -114,6 +114,8 @@ SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flo
     }
 
     // Set source indices
+    this -> xCenter = xCenter;
+    this -> yCenter = yCenter;
     SetIndices(N, shape, xCenter, yCenter, radius);
 
     // Calculate sources
@@ -141,6 +143,8 @@ SimSource::WindSource::WindSource(int N, float lengthScale, float angle, float s
     this -> yVel = speed * sin(angle * 3.1415926 / 180.0);
 
     // Set source indices
+    this -> xCenter = xCenter;
+    this -> yCenter = yCenter;
     SetIndices(N, point, xCenter, yCenter, 0.0);
 }
 
@@ -162,6 +166,8 @@ SimSource::HeatSource::HeatSource(int N, float lengthScale, Shape shape, float s
     this -> yVel = 0.0;
 
     // Set source indices
+    this -> xCenter = xCenter;
+    this -> yCenter = yCenter;
     SetIndices(N, shape, xCenter, yCenter, radius);
 }
 
@@ -190,6 +196,8 @@ SimSource::EnergySource::EnergySource(int N, float lengthScale, Shape shape, flo
     }
 
     // Set source indices
+    this -> xCenter = xCenter;
+    this -> yCenter = yCenter;
     SetIndices(N, shape, xCenter, yCenter, radius);
 
     // Calculate sources
@@ -222,5 +230,60 @@ SimSource::WindBoundary::WindBoundary(int N, float speed)
         // Set left and right boundaries
         indices.push_back(indN(1,i,N));
         indices.push_back(indN(N,i,N));
+    }
+}
+
+
+
+// Remove source
+void SimSource::RemoveSource(Source* sourceToRemove)
+{
+    // Remove from source list
+    this->sources.remove(sourceToRemove);
+    delete sourceToRemove;
+
+    // Propogate change to simulation
+    this->UpdateSources();
+}
+
+// Find source that overlaps with point and remove it
+void SimSource::RemoveSourceAtPoint(float x, float y)
+{
+    // Loop through sources
+    for(Source* source : sources){
+
+        // Check if point is inside source
+        if(typeid(source).name() == "WindBoundary"){
+            continue;
+        }else{
+
+            float xDist = abs(x - source->xCenter);
+            float yDist = abs(y - source->yCenter);
+
+            switch(source->shape){
+                case circle:
+                    if(xDist * xDist + yDist * yDist < source->radius * source->radius){
+                        RemoveSource(source);
+                        return;
+                    }
+                    break;
+                case square:
+
+                    if((xDist < source->radius) 
+                    && (yDist < source->radius)){
+                        RemoveSource(source);
+                        return;
+                    }
+                    break;
+
+                case diamond:
+
+                    if(xDist + yDist < source->radius){
+                        RemoveSource(source);
+                        return;
+                    }
+                    break;
+            }
+        }
     }
 }

@@ -134,7 +134,7 @@ class SimState
         void TemperatureStep(float);
 };
 
-// Method to display simulation state in terminal
+// Method to display simulation state in terminal (DEPRECATED)
 void DisplayGrid(SimState stateInput, float minimum);
 
 // Preprocessor close statement

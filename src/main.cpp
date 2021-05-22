@@ -15,9 +15,6 @@
 // Namespaces
 using namespace std;
 
-// Macros
-#define ind(i,j,N) ((i) + ((N) + 2)*(j))
-
 int main(int argc, char** argv){
 
     // Window option

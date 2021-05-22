@@ -12,6 +12,7 @@ class SimTimer
         void StartFrame();
         void EndFrame();
         void DisplayFrameRate(int framesPerUpdate);
+        void DisplayFrameRatePerMS(int msPerUpdate);
 
         // Public accessors
         void SetFrameRate(int maxFrameRate);

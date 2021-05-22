@@ -45,7 +45,7 @@ int main(int argc, char** argv){
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-       WindowRenderLoop(window, testState.fields.dens, testState.fields.temp);
+        WindowRenderLoop(window, testState.fields.dens, testState.fields.temp);
 
         // Update simulation state
         testState.SimulationStep(timeScale * timer.DeltaTime());
@@ -54,10 +54,7 @@ int main(int argc, char** argv){
         timer.EndFrame();
 
         // Read out frame rate every 100 frames
-        timer.DisplayFrameRate(100);
-
-        // Exit after 1000 frames
-        if(timer.CurrentFrame() == 1000){ break; }
+        timer.DisplayFrameRatePerMS(1000);
     }
 
     // End GLFW context

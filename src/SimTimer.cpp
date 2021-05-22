@@ -76,6 +76,28 @@ void SimTimer::DisplayFrameRate(int framesPerUpdate)
     }
 }
 
+// Read out frame rate at set time interval
+void SimTimer::DisplayFrameRatePerMS(int msPerUpdate)
+{
+    if(Now() - monitorTimerStart > msPerUpdate){
+        
+        // Calculate frame rates
+        unsigned int currentTime = Now();
+        float currentFrameRate = (frameCounter * 1000) / float((currentTime - monitorTimerStart));
+        float avgFrameRate = (totalFrameCounter * 1000) / float((currentTime - simTimerStart));
+        
+        // Read out to std output
+        cout << "Current FPS: " << currentFrameRate << ", Average FPS: " << avgFrameRate << endl;
+
+        // Reset frame counter
+        frameCounter = 0;
+
+        // Reset monitor timer
+        monitorTimerStart = Now();
+
+    }
+}
+
 // Get frame time for simulation
 float SimTimer::DeltaTime()
 {

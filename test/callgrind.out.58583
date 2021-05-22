@@ -1,0 +1,21 @@
+# callgrind format
+version: 1
+creator: callgrind-3.15.0
+pid: 58583
+cmd:  ../bin/FluidSimulator
+part: 1
+
+
+desc: I1 cache: 32768 B, 64 B, 8-way associative
+desc: D1 cache: 32768 B, 64 B, 8-way associative
+desc: LL cache: 6291456 B, 64 B, 12-way associative
+
+desc: Timerange: Basic block 0 - 0
+desc: Trigger: Program termination
+
+positions: instr line
+events: Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw
+summary: 0
+
+
+totals: 0

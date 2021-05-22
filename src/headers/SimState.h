@@ -120,7 +120,7 @@ class SimState
         void AddHeatSource(float *, float *);
         void AddConstantSource(float *, float, float);
 
-        void DiffuseImproved(int b, float * x, float * x0, float (*diff)(int, SimParams, SimFields), float dt);
+        void Diffuse(int b, float * x, float * x0, float (*diff)(int, SimParams, SimFields), float dt);
         void Dissipate(float *, float, float, float);
         void DissipateWithFallOff(float *, float, float, float, float);
         void Advect(int, float *, float *, float *, float *, float);

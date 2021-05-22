@@ -25,35 +25,14 @@ int main(int argc, char** argv){
     int totalSize = 1000;
     int cellSize = int(round(totalSize / N));
     int maxFrameRate = 100;
+    float timeScale = 1.0;
 
-    // Declarations
-    float lengthScale = 1.0;        // Side length of the box
-    float timeScale = 1.0;          // Simulation speed in simulation seconds / real seconds
-    float visc = 0.000018;          // Dynamic viscosity at air temperature
-    float diff = 0.000028;          // Diffusion constant at air temperature
-    float grav = -9.8;              // Gravitational force
-    float airDensity = 1.29235;     // Density of background air
-    // float massRatio = 1.608;        // Ratio of molar mass of air / molar mass of gas
-    float massRatio = 0.54;         // Ratio of molar mass of air / molar mass of gas
-    float airTemp = 300.0;          // Temperature of background air
-    float diffTemp = 0.00002338;    // Thermal diffusivity of gas
-    float densDecay = 0.0;          // Rate of decay for density field
-    float tempFactor = 0.0;         // Linear decrease in density decay per degree temperature above airTemp
-    float tempDecay = 0.0;          // Rate of decay for temperature field
-
-
-
-    // Initialize state
-    SimParams params = SimParams(lengthScale, visc, diff, grav, airDensity, massRatio, airTemp, diffTemp, densDecay, tempFactor, tempDecay);
-    SimState testState = SimState(N, params);
+    // Initialize state objects
+    SimState testState = SimState(N);
     SimSource sources = SimSource(&testState);
-    // SimParams params;
-    // SimState testState = SimState(N, params);
-    // SimSource sources = SimSource(&testState);
-    // LoadState("./src/json/default.json", &testState, &params, &sources);
+    LoadState("./src/json/default.json", &testState, &sources);
 
     // Set up sources
-    testState.SetBoundaryClosed(false);
     sources.CreateGasSource(SimSource::circle, 0.5, 5000.0, 0.0, -0.75, 0.075);
     sources.CreateWindBoundary(0.025);
     sources.UpdateSources();
@@ -68,7 +47,6 @@ int main(int argc, char** argv){
     // Simulation loop
     while(!glfwWindowShouldClose(window))
     {
-        
         // Declare beginning of frame
         timer.StartFrame();
 
@@ -85,7 +63,7 @@ int main(int argc, char** argv){
         timer.DisplayFrameRate(100);
 
         // Exit after 1000 frames
-        if(timer.CurrentFrame() == 10000){ break; }
+        if(timer.CurrentFrame() == 1000){ break; }
     }
 
     // End GLFW context

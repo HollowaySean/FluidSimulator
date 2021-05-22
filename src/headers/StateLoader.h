@@ -13,7 +13,10 @@
 //// Functions ////
 
 // Load state into existing objects
-void LoadState(const char* jsonPath, SimState* state, SimParams* params, SimSource* sources);
+void LoadState(const char* jsonPath, SimState* state, SimSource* source);
+
+// Load state into existing objects (including params)
+void LoadState(const char* jsonPath, SimState* state, SimParams* params, SimSource* source);
 
 // Preprocessor end statement
 #endif

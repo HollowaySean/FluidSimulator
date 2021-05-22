@@ -222,7 +222,7 @@ void SimState::SetBoundary(int b, float * x)
 }
 
 // Improved diffusion
-void SimState::DiffuseImproved(int b, float * x, float * x0, float (*diff)(int, SimParams, SimFields), float dt)
+void SimState::Diffuse(int b, float * x, float * x0, float (*diff)(int, SimParams, SimFields), float dt)
 {
     // Adjust a to account for cell size and timestep
     float cellSize = params.lengthScale / N;
@@ -391,7 +391,7 @@ void SimState::DensityStep(float dt)
 
     // Diffuse by Fick's law
     swap(fields.dens_prev, fields.dens); 
-    DiffuseImproved(params.closedBoundaries ? 0 : -1, fields.dens, fields.dens_prev, SimState::AdjustedMassDiffusivity, dt);
+    Diffuse(params.closedBoundaries ? 0 : -1, fields.dens, fields.dens_prev, SimState::AdjustedMassDiffusivity, dt);
     swap(fields.dens_prev, fields.dens); 
 
     // Dissipate smoke
@@ -419,14 +419,11 @@ void SimState::VelocityStep(float dt)
         Convect(fields.yVel, dt);
     }
 
-    // Perform Hodge projection to remove divergence
-    // HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
-
     // Perform velocity diffusion
     swap(fields.xVel_prev, fields.xVel);
-    DiffuseImproved(params.closedBoundaries ? 1 : 0, fields.xVel, fields.xVel_prev, SimState::AdjustedViscosity, dt);
+    Diffuse(params.closedBoundaries ? 1 : 0, fields.xVel, fields.xVel_prev, SimState::AdjustedViscosity, dt);
     swap(fields.yVel_prev, fields.yVel);
-    DiffuseImproved(params.closedBoundaries ? 2 : 0, fields.yVel, fields.yVel_prev, SimState::AdjustedViscosity,dt);
+    Diffuse(params.closedBoundaries ? 2 : 0, fields.yVel, fields.yVel_prev, SimState::AdjustedViscosity,dt);
 
     // Perform Hodge projection to remove divergence
     HodgeProjection(fields.xVel, fields.yVel, fields.xVel_prev, fields.yVel_prev);
@@ -449,7 +446,7 @@ void SimState::TemperatureStep(float dt)
 
     // Perform thermal diffusion
     swap(fields.temp_prev, fields.temp);
-    DiffuseImproved(0, fields.temp, fields.temp_prev, SimState::AdjustedThermalDiffusivity, dt);
+    Diffuse(0, fields.temp, fields.temp_prev, SimState::AdjustedThermalDiffusivity, dt);
     swap(fields.temp_prev, fields.temp);
 
     // Perform cooling due to surrounding air
@@ -475,6 +472,11 @@ SimParams::SimParams()
     grav = 0.;
     airDens = 0.;
     massRatio = 0.;
+    airTemp = 0.;
+    diffTemp = 0.;
+    densDecay = 0.;
+    tempFactor = 0.;
+    tempDecay = 0.;
 
     // Default options
     closedBoundaries = true;
@@ -491,6 +493,16 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion)
     this -> lengthScale = lengthScale;
     this -> visc = viscosity;
     this -> diff = diffusion;
+
+    // Set static parameters otherwise
+    grav = 0.;
+    airDens = 0.;
+    massRatio = 0.;
+    airTemp = 0.;
+    diffTemp = 0.;
+    densDecay = 0.;
+    tempFactor = 0.;
+    tempDecay = 0.;
 
     // Default options
     closedBoundaries = true;
@@ -512,6 +524,13 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion,
     this -> grav = gravity;
     this -> airDens = airDensity;
     this -> massRatio = massRatio;
+
+    // Set static parameters otherwise
+    airTemp = 0.;
+    diffTemp = 0.;
+    densDecay = 0.;
+    tempFactor = 0.;
+    tempDecay = 0.;
 
     // Default options
     closedBoundaries = true;
@@ -536,6 +555,11 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion,
     this -> massRatio = massRatio;
     this -> airTemp = airTemp;
     this -> diffTemp = diffTemp;
+
+    // Set static parameters otherwise
+    densDecay = 0.;
+    tempFactor = 0.;
+    tempDecay = 0.;
 
     // Default options
     closedBoundaries = true;

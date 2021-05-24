@@ -8,9 +8,15 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
 
-GLFWwindow* WindowSetup(int xSize, int ySize);
-void WindowRenderLoop(GLFWwindow* window, float* density, float* temperature);
+
+GLFWwindow* SimWindowSetup(int xSize, int ySize);
+GLFWwindow* ControlWindowSetup(int xSize, int ySize);
+void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature);
+void ControlWindowRenderLoop(GLFWwindow* window, float* controlVal);
 
 void ErrorCallback(int error, const char* description);
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height);

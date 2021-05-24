@@ -5,6 +5,11 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <nlohmann/json.hpp>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
+using namespace ImGui;
 
 // Project header files
 #include "headers/SimSource.h"
@@ -34,21 +39,35 @@ int main(int argc, char** argv){
     SimSource sources = SimSource(&testState);
     LoadState("default", &testState, &sources);
 
-    // Set up window
-    GLFWwindow* window = WindowSetup(N, cellSize);
+    // Set up simulation window
+    GLFWwindow* simWindow = SimWindowSetup(N, cellSize);
+
+    // Set up control window
+    // GLFWwindow* controlWindow = ControlWindowSetup(400, 400);
+
+    // DEBUG SLASH TEST
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;   
+    ImGui_ImplGlfw_InitForOpenGL(simWindow, true);
+    ImGui_ImplOpenGL3_Init("#version 330 core");
 
     // Initialize timers
     SimTimer timer = SimTimer(maxFrameRate);
     timer.StartSimulation();
 
+    float test = 0.0;
+
     // Simulation loop
-    while(!glfwWindowShouldClose(window))
+    while(!glfwWindowShouldClose(simWindow))
     {
         // Declare beginning of frame
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-        WindowRenderLoop(window, testState.fields.dens, testState.fields.temp);
+        SimWindowRenderLoop(simWindow, testState.fields.dens, testState.fields.temp);
+
+        // Draw control window
+        ControlWindowRenderLoop(simWindow, &test);
 
         // Update simulation state
         testState.SimulationStep(timeScale * timer.DeltaTime());
@@ -60,7 +79,14 @@ int main(int argc, char** argv){
         timer.DisplayFrameRatePerMS(1000);
     }
 
+    // End ImGui context
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     // End GLFW context
+    glfwDestroyWindow(simWindow);
+    // glfwDestroyWindow(controlWindow);
     glfwTerminate();
 
     // Exit code

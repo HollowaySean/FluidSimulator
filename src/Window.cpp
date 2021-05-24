@@ -31,8 +31,8 @@ void ProcessInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
 }
 
-// OpenGL environment and background setup
-GLFWwindow* WindowSetup(int N_in, int cellSize_in)
+// OpenGL environment and background setup for simulation display
+GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
 {
     // Save parameters
     N = N_in + 2;
@@ -138,8 +138,12 @@ GLFWwindow* WindowSetup(int N_in, int cellSize_in)
     return window;
 }
 
-void WindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
+// Processes to be called each frame for simulation window
+void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
 {
+    // Make sim window context current
+    glfwMakeContextCurrent(window);
+
     // Take keyboard and mouse input
     ProcessInput(window);
     // Activate shader
@@ -160,4 +164,60 @@ void WindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     // End of frame events
     glfwSwapBuffers(window);
     glfwPollEvents();
+}
+
+// Create control window for already active OpenGL environment
+GLFWwindow* ControlWindowSetup(int xSize, int ySize)
+{
+
+    // Set up main window
+    GLFWwindow* window = glfwCreateWindow(xSize, ySize, "Control", NULL, NULL);
+    if(window == NULL){ 
+        fprintf(stderr, "GLFW failed to create window."); 
+        glfwTerminate();
+    }
+    glfwMakeContextCurrent(window); 
+    
+    // Create ImGui context
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;   
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330 core");
+
+    return window;
+}
+
+// Processes to be called each frame for control window
+void ControlWindowRenderLoop(GLFWwindow* window, float* controlVal)
+{
+    char buf[255];
+
+    // Make control window context current
+    glfwMakeContextCurrent(window);
+
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Text("Hello, world %d", 123);
+    if (ImGui::Button("Save"))
+        std::cout << "Button pressed" << std::endl;
+    ImGui::InputText("string", buf, IM_ARRAYSIZE(buf));
+    ImGui::SliderFloat("float", controlVal, 0.0f, 1.0f);
+
+    // bool showWindow = true;
+    // ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    // ImGui::ShowDemoWindow(&showWindow);
+
+    // Render ImGui frame
+    ImGui::Render();
+    // int display_w, display_h;
+    // glfwGetFramebufferSize(window, &display_w, &display_h);
+    // glViewport(0, 0, display_w, display_h);
+    // glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+    // glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    glfwSwapBuffers(window);
+
 }

@@ -54,6 +54,8 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "bit": "cpp"
+        "bit": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp"
     }
 }

@@ -1,6 +1,7 @@
 // Pre-processor include statements
 #include <iostream>
 #include <cmath>
+#include <string>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <nlohmann/json.hpp>
@@ -12,7 +13,14 @@
 #include "headers/Window.h"
 #include "headers/StateLoader.h"
 
+// Global variables
+std::string projectPath;
+
 int main(int argc, char** argv){
+
+    // Get project path
+    std::string fullpath = argv[0];
+    projectPath = fullpath.substr(0, fullpath.find_last_of("/")) + "/..";
 
     // Window option
     int N = 100;
@@ -24,7 +32,7 @@ int main(int argc, char** argv){
     // Initialize state objects
     SimState testState = SimState(N);
     SimSource sources = SimSource(&testState);
-    LoadState("./src/json/default.json", &testState, &sources);
+    LoadState("default", &testState, &sources);
 
     // Set up sources
     sources.CreateGasSource(SimSource::circle, 0.5, 5000.0, 0.0, -0.75, 0.075);

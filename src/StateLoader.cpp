@@ -11,8 +11,11 @@ using json = nlohmann::json;
 //// Functions ////
 
 // Load state into existing objects (including params)
-void LoadState(const char* jsonPath, SimState* state, SimParams* params, SimSource* source)
+void LoadState(const char* jsonFilename, SimState* state, SimParams* params, SimSource* source)
 {
+
+    // Append JSON filename to correct path
+    std::string jsonPath = projectPath + "/src/json/" + jsonFilename + ".json";
 
     // Open file
     std::ifstream ifs(jsonPath);
@@ -44,8 +47,11 @@ void LoadState(const char* jsonPath, SimState* state, SimParams* params, SimSour
 }
 
 // Load state into existing objects
-void LoadState(const char* jsonPath, SimState* state, SimSource* source)
+void LoadState(const char* jsonFilename, SimState* state, SimSource* source)
 {
+
+    // Append JSON filename to correct path
+    std::string jsonPath = projectPath + "/src/json/" + jsonFilename + ".json";
 
     // Open file
     std::ifstream ifs(jsonPath);

@@ -72,9 +72,7 @@ GLFWwindow* WindowSetup(int N_in, int cellSize_in)
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 
     // Set up shader
-    shader = new Shader(
-        "./src/shaders/simpleVertex.vs", 
-        "./src/shaders/blackbody.fs");
+    shader = new Shader("simpleVertex", "blackbody");
 
     // Create Vertex Attribute Object
     glGenVertexArrays(1, &VAO);

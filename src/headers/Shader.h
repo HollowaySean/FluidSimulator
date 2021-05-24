@@ -12,6 +12,9 @@
 #include <sstream>
 #include <iostream>
 
+// Global variables
+extern std::string projectPath;
+
 // Class to read in shaders from file
 class Shader
 {

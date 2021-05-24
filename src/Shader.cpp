@@ -7,8 +7,13 @@
 #include <string.h>
 
 // Constructor
-Shader::Shader(const char* vertexPath, const char* fragmentPath)
+Shader::Shader(const char* vertexFilename, const char* fragmentFilename)
 {
+    // Determine full filepath to shaders
+    std::string shaderPath = projectPath + "/src/shaders/";
+    std::string vertexPath = shaderPath + vertexFilename + ".vs";
+    std::string fragmentPath = shaderPath + fragmentFilename + ".fs";
+
     // 1. retrieve the vertex/fragment source code from filePath
     std::string vertexCode;
     std::string fragmentCode;

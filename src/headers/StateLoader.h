@@ -21,5 +21,11 @@ void LoadState(const char* jsonFilename, SimState* state, SimSource* source);
 // Load state into existing objects (including params)
 void LoadState(const char* jsonFilename, SimState* state, SimParams* params, SimSource* source);
 
+// Convert string to enum for shape
+SimSource::Shape StringToShape(std::string shapeName);
+
+// Convert string to enum for type
+SimSource::Type StringToType(std::string typeName);
+
 // Preprocessor end statement
 #endif

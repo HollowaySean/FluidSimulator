@@ -17,7 +17,7 @@ class SimSource
 
         // Enumerable type designators
         enum Shape { square, circle, diamond, point };
-        enum Type  { gas, wind, heat, energy };
+        enum Type  { gas, wind, windBoundary, heat, energy };
 
         // SimState object
         SimState* simState;

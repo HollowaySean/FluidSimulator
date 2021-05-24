@@ -35,9 +35,9 @@ int main(int argc, char** argv){
     LoadState("default", &testState, &sources);
 
     // Set up sources
-    sources.CreateGasSource(SimSource::circle, 0.5, 5000.0, 0.0, -0.75, 0.075);
-    sources.CreateWindBoundary(0.025);
-    sources.UpdateSources();
+    // sources.CreateGasSource(SimSource::circle, 0.5, 5000.0, 0.0, -0.75, 0.075);
+    // sources.CreateWindBoundary(0.025);
+    // sources.UpdateSources();
 
     // Set up window
     GLFWwindow* window = WindowSetup(N, cellSize);

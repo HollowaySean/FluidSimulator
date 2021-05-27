@@ -53,6 +53,23 @@ void SimTimer::EndFrame()
     }else{
         timeStep = float(elapsedTime) / 1000.0;
     }
+
+    // Update frame rate counters
+    if(trackFrameRate && (Now() - monitorTimerStart > msPerUpdate)){
+
+        // Call frame rate updates
+        UpdateFrameRate();
+    }
+}
+
+// Start frame rate tracking
+void SimTimer::TrackFrameRatePerMS(int msPerUpdate){
+
+    // Save update time
+    this->msPerUpdate = msPerUpdate;
+
+    // Set necessary variables
+    trackFrameRate = true;
 }
 
 // Read out frame rate at set interval
@@ -94,7 +111,6 @@ void SimTimer::DisplayFrameRatePerMS(int msPerUpdate)
 
         // Reset monitor timer
         monitorTimerStart = Now();
-
     }
 }
 
@@ -116,6 +132,17 @@ int SimTimer::CurrentFrame()
     return totalFrameCounter;
 }
 
+// Get current frame rate
+float SimTimer::CurrentFrameRate()
+{
+    return currentFrameRate;
+}
+
+// Get average frame rate
+float SimTimer::AverageFrameRate()
+{
+    return averageFrameRate;
+}
 
 
 //// PRIVATE METHODS ////
@@ -124,4 +151,19 @@ int SimTimer::CurrentFrame()
 unsigned int SimTimer::Now()
 {
     return chrono::duration_cast<chrono::milliseconds> (chrono::system_clock::now().time_since_epoch()).count();
+}
+
+// Update frame rate variables
+void SimTimer::UpdateFrameRate()
+{
+    // Calculate frame rates
+    unsigned int currentTime = Now();
+    currentFrameRate = (frameCounter * 1000) / float((currentTime - monitorTimerStart));
+    averageFrameRate = (totalFrameCounter * 1000) / float((currentTime - simTimerStart));
+
+    // Reset frame counter
+    frameCounter = 0;
+
+    // Reset monitor timer
+    monitorTimerStart = Now();
 }

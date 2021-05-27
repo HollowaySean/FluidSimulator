@@ -28,8 +28,9 @@ int main(int argc, char** argv){
     projectPath = fullpath.substr(0, fullpath.find_last_of("/")) + "/..";
 
     // Window option
-    int resolution = 100;
-    int totalSize = 500;
+    int resolution = 80;
+    int totalSize = 800;
+    int controlPanelSize = 200;
     int maxFrameRate = 100;
     float timeScale = 1.0;
 
@@ -40,10 +41,11 @@ int main(int argc, char** argv){
 
     // Set up simulation and control windows
     GLFWwindow* window = SimWindowSetup(resolution, totalSize);
-    ControlWindowSetup(window);
+    ControlWindowSetup(window, controlPanelSize);
 
     // Initialize timers
     SimTimer timer = SimTimer(maxFrameRate);
+    timer.TrackFrameRatePerMS(1000);
     timer.StartSimulation();
 
     // Simulation loop
@@ -56,16 +58,13 @@ int main(int argc, char** argv){
         SimWindowRenderLoop(window, testState.fields.dens, testState.fields.temp);
 
         // Draw control window
-        ControlWindowRenderLoop(window, &(testState.params));
+        ControlWindowRenderLoop(window, &(testState.params), &timer);
 
         // Update simulation state
         testState.SimulationStep(timeScale * timer.DeltaTime());
 
         // Sleep until frame is complete
         timer.EndFrame();
-
-        // Read out frame rate every 100 frames
-        timer.DisplayFrameRatePerMS(1000);
     }
 
     // End ImGui context

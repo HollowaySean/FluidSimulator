@@ -13,6 +13,9 @@ int resolution;
 int winWidth;
 int texWidth;
 int texSize;
+int controlWidth;
+ImVec2 controlPos;
+ImVec2 controlSize;
 
 // OpenGL Error Callback
 void ErrorCallback(int error, const char* description)
@@ -23,11 +26,13 @@ void ErrorCallback(int error, const char* description)
 // OpenGL Resize Callback
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
-    // TODO: WORK ON THIS
-    int size = std::min(width, height);
-    glViewport(0, height - size, size, size);
+    // Resize window with simulation centered in window
+    int size = std::min(width - controlWidth, height);
+    glViewport((width - controlWidth - size) / 2, (height - size) / 2, size, size);
 
-    // TODO: RESIZE/POSITION CONTROL PANEL
+    // Resize control panel
+    controlPos = ImVec2(float(width - controlWidth), 0.0);
+    controlSize = ImVec2(float(controlWidth), float(height));
 }
 
 // OpenGL input script
@@ -75,6 +80,7 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     // Set up viewing window
     glViewport(0, 0, windowWidth, windowWidth);
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+    FramebufferSizeCallback(window, windowWidth, windowWidth);
 
     // Set up shader
     shader = new Shader("simpleVertex", "blackbody");
@@ -150,6 +156,10 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
 // Processes to be called each frame for simulation window
 void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
 {
+    // Clear background color
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     // Take keyboard and mouse input
     ProcessInput(window);
 
@@ -174,17 +184,24 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
 }
 
 // Create control window for already active OpenGL environment
-void ControlWindowSetup(GLFWwindow* window)
+void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth)
 {
+    // Save control panel size
+    controlWidth = controlPanelWidth;
+
     // Create ImGui context in open window
     ImGui::CreateContext();
     //ImGuiIO& io = ImGui::GetIO(); (void)io;   
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
+
+    // Resize window
+    glfwSetWindowSize(window, winWidth + controlWidth, winWidth);
+    FramebufferSizeCallback(window, winWidth + controlWidth, winWidth);
 }
 
 // Processes to be called each frame for control window
-void ControlWindowRenderLoop(GLFWwindow* window, SimParams* params)
+void ControlWindowRenderLoop(GLFWwindow* window, SimParams* params, SimTimer* timer)
 {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -192,12 +209,12 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimParams* params)
     ImGui::NewFrame();
 
     // Set static size of window
-    ImGui::SetNextWindowPos(ImVec2(900.0, 0.0), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(120.0, 1020.0), ImGuiCond_Once);
+    ImGui::SetNextWindowPos(controlPos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(controlSize, ImGuiCond_Always);
 
     // Control panel content
-    ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoResize);
-    ImGui::Text("Stuff goes here!");
+    ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoResize);
+    ImGui::Text("Current FPS: %f", timer->CurrentFrameRate());
 
     // Render ImGui frame
     ImGui::End();

@@ -1,5 +1,6 @@
 {
     "lengthScale" : 1.0,
+    "timeScale" : 1.0,
     "visc" : 0.000018,
     "diff" : 0.000028,
     "grav" : -9.8,

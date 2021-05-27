@@ -31,8 +31,7 @@ int main(int argc, char** argv){
     int resolution = 80;
     int totalSize = 800;
     int controlPanelSize = 200;
-    int maxFrameRate = 100;
-    float timeScale = 1.0;
+    int maxFrameRate = 1000;
 
     // Initialize state objects
     SimState testState = SimState(resolution);
@@ -61,7 +60,7 @@ int main(int argc, char** argv){
         ControlWindowRenderLoop(window, &(testState.params), &timer);
 
         // Update simulation state
-        testState.SimulationStep(timeScale * timer.DeltaTime());
+        testState.SimulationStep(timer.DeltaTime());
 
         // Sleep until frame is complete
         timer.EndFrame();

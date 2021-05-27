@@ -9,13 +9,13 @@ struct SimParams
 {
     // Constructors
     SimParams();
-    SimParams(float lengthScale, float viscosity, float diffusion);
-    SimParams(float lengthScale, float viscosity, float diffusion, 
+    SimParams(float lengthScale, float timeScale, float viscosity, float diffusion);
+    SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
                 float gravity, float airDensity, float massRatio);
-    SimParams(float lengthScale, float viscosity, float diffusion, 
+    SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
                 float gravity, float airDensity, float massRatio, 
                 float airTemp, float diffTemp);
-    SimParams(float lengthScale, float viscosity, float diffusion, 
+    SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
                 float gravity, float airDensity, float massRatio, 
                 float airTemp, float diffTemp,
                 float densDecay, float tempFactor, float tempDecay);
@@ -29,6 +29,7 @@ struct SimParams
 
     // Physical constants
     float lengthScale;
+    float timeScale;
     float visc;
     float diff;
     float grav;

@@ -23,6 +23,7 @@ void LoadState(const char* jsonFilename, SimState* state, SimParams* params, Sim
 
     // Update params with data
     params->lengthScale          = j["lengthScale"];
+    params->timeScale            = j["timeScale"];
     params->visc                 = j["visc"];
     params->diff                 = j["diff"];
     params->grav                 = j["grav"];
@@ -102,6 +103,7 @@ void LoadState(const char* jsonFilename, SimState* state, SimSource* source)
 
     // Update params with data
     params->lengthScale          = j["lengthScale"];
+    params->timeScale            = j["timeScale"];
     params->visc                 = j["visc"];
     params->diff                 = j["diff"];
     params->grav                 = j["grav"];

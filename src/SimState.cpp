@@ -61,6 +61,9 @@ void SimState::SetSources(float * density, float * xVelocity, float * yVelocity,
 // Run simulation step
 void SimState::SimulationStep(float timeStep)
 {
+    // Adjust for time scale
+    float dt = timeStep * params.timeScale;
+
     // Set sources as input
     SetSource(fields.dens_prev, fields.dens_source);
     SetSource(fields.xVel_prev, fields.xVel_source);
@@ -68,10 +71,10 @@ void SimState::SimulationStep(float timeStep)
     SetSource(fields.temp_prev, fields.temp_source);
 
     // Start futher simulation steps
-    VelocityStep(timeStep);
-    DensityStep(timeStep);
+    VelocityStep(dt);
+    DensityStep(dt);
     if(params.temperatureOn)
-        TemperatureStep(timeStep);
+        TemperatureStep(dt);
 }
 
 // Set boundaries open/closed
@@ -467,6 +470,7 @@ SimParams::SimParams()
 {
     // Set to static parameters
     lengthScale = 1.;
+    timeScale = 1.;
     visc = 0.;
     diff = 0.;
     grav = 0.;
@@ -487,10 +491,11 @@ SimParams::SimParams()
 }
 
 // Constructor for simple advection/diffusion simulation
-SimParams::SimParams(float lengthScale, float viscosity, float diffusion)
+SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion)
 {
     // Set input parameters
     this -> lengthScale = lengthScale;
+    this -> timeScale = timeScale;
     this -> visc = viscosity;
     this -> diff = diffusion;
 
@@ -514,11 +519,12 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion)
 }
 
 // Constructor for buoyant simulation
-SimParams::SimParams(float lengthScale, float viscosity, float diffusion, 
+SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
                      float gravity, float airDensity, float massRatio)
 {
     // Set input parameters
     this -> lengthScale = lengthScale;
+    this -> timeScale = timeScale;
     this -> visc = viscosity;
     this -> diff = diffusion;
     this -> grav = gravity;
@@ -542,12 +548,13 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion,
 }
 
 // Constructor for full thermal simulation
-SimParams::SimParams(float lengthScale, float viscosity, float diffusion, 
+SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
                      float gravity, float airDensity, float massRatio, 
                      float airTemp, float diffTemp)
 {
     // Set input parameters
     this -> lengthScale = lengthScale;
+    this -> timeScale = timeScale;
     this -> visc = viscosity;
     this -> diff = diffusion;
     this -> grav = gravity;
@@ -571,13 +578,14 @@ SimParams::SimParams(float lengthScale, float viscosity, float diffusion,
 }
 
 // Constructor for full thermal simulation
-SimParams::SimParams(float lengthScale, float viscosity, float diffusion, 
+SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
                      float gravity, float airDensity, float massRatio, 
                      float airTemp, float diffTemp, 
                      float densDecay, float tempFactor, float tempDecay)
 {
     // Set input parameters
     this -> lengthScale = lengthScale;
+    this -> timeScale = timeScale;
     this -> visc = viscosity;
     this -> diff = diffusion;
     this -> grav = gravity;

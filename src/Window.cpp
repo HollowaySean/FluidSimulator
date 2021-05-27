@@ -75,7 +75,7 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     if(GLEW_OK != err){
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
-    fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+    //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
     
     // Set up viewing window
     glViewport(0, 0, windowWidth, windowWidth);
@@ -83,7 +83,8 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     FramebufferSizeCallback(window, windowWidth, windowWidth);
 
     // Set up shader
-    shader = new Shader("simpleVertex", "blackbody");
+    // shader = new Shader("simpleVertex", "blackbody");
+    shader = new Shader("simpleVertex", "density");
 
     // Create Vertex Attribute Object
     glGenVertexArrays(1, &VAO);
@@ -214,7 +215,7 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimParams* params, SimTimer* ti
 
     // Control panel content
     ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoResize);
-    ImGui::Text("Current FPS: %f", timer->CurrentFrameRate());
+    ImGui::Text("Current FPS: %f \nAverage FPS: %f", timer->CurrentFrameRate(), timer->AverageFrameRate());
 
     // Render ImGui frame
     ImGui::End();

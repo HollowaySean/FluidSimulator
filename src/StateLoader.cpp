@@ -10,7 +10,7 @@ using json = nlohmann::json;
 
 //// Functions ////
 
-// Load state into existing objects (including params)
+// Load state into existing objects (including params and props)
 void LoadState(const char* jsonFilename, SimState* state, SimParams* params, SimSource* source)
 {
 
@@ -21,30 +21,57 @@ void LoadState(const char* jsonFilename, SimState* state, SimParams* params, Sim
     std::ifstream ifs(jsonPath);
     json j = json::parse(ifs);
 
-    // Update params with data
-    params->lengthScale          = j["lengthScale"];
-    params->timeScale            = j["timeScale"];
-    params->visc                 = j["visc"];
-    params->diff                 = j["diff"];
-    params->grav                 = j["grav"];
-    params->airDens              = j["airDensity"];
-    params->massRatio            = j["massRatio"];
-    params->airTemp              = j["airTemp"];
-    params->diffTemp             = j["diffTemp"];
-    params->densDecay            = j["densDecay"];
-    params->tempFactor           = j["tempFactor"];
-    params->tempDecay            = j["tempDecay"];
-    params->closedBoundaries     = j["closedBoundaries"];
-    params->advancedCoefficients = j["advancedCoefficients"];
-    params->gravityOn            = j["gravityOn"];
-    params->temperatureOn        = j["temperatureOn"];
-    params->solverSteps          = j["solverSteps"];
+    // Load simulation parameters
+    LoadParams(j, params);
 
     // Set SimState parameters
     state->params = *params;
 
+    // Load sources
+    LoadSources(j, source);
+
+    //  Close filestream
+    ifs.close();
+}
+
+// Load state into existing objects, using params from state
+void LoadState(const char* jsonFilename, SimState* state, SimSource* source)
+{
+    // Get params from state
+    SimParams* params = &(state->params);
+
+    // Run full method
+    LoadState(jsonFilename, state, params, source);
+}
+
+// Load parameters
+void LoadParams(nlohmann::json json, SimParams* params)
+{
+    // Update params with data
+    params->lengthScale          = json["params"]["lengthScale"];
+    params->timeScale            = json["params"]["timeScale"];
+    params->visc                 = json["params"]["visc"];
+    params->diff                 = json["params"]["diff"];
+    params->grav                 = json["params"]["grav"];
+    params->airDens              = json["params"]["airDensity"];
+    params->massRatio            = json["params"]["massRatio"];
+    params->airTemp              = json["params"]["airTemp"];
+    params->diffTemp             = json["params"]["diffTemp"];
+    params->densDecay            = json["params"]["densDecay"];
+    params->tempFactor           = json["params"]["tempFactor"];
+    params->tempDecay            = json["params"]["tempDecay"];
+    params->closedBoundaries     = json["params"]["closedBoundaries"];
+    params->advancedCoefficients = json["params"]["advancedCoefficients"];
+    params->gravityOn            = json["params"]["gravityOn"];
+    params->temperatureOn        = json["params"]["temperatureOn"];
+    params->solverSteps          = json["params"]["solverSteps"];
+}
+
+// Load sources
+void LoadSources(nlohmann::json json, SimSource* source)
+{
     // Load sources from file
-    nlohmann::json sourceList = j["sources"];
+    nlohmann::json sourceList = json["sources"];
     
     // Loop through sources
     for(int i = 0; i < sourceList.size(); i++){
@@ -83,13 +110,19 @@ void LoadState(const char* jsonFilename, SimState* state, SimParams* params, Sim
 
     // Implement sources
     source->UpdateSources();
-
-    //  Close filestream
-    ifs.close();
 }
 
-// Load state into existing objects
-void LoadState(const char* jsonFilename, SimState* state, SimSource* source)
+// Load window settings
+void LoadWindow(nlohmann::json json, WindowProps* props)
+{
+    props->resolution   = json["windowProps"]["resolution"];
+    props->winWidth     = json["windowProps"]["winWidth"];
+    props->controlWidth = json["windowProps"]["controlWidth"];
+    props->maxFrameRate = json["windowProps"]["maxFrameRate"];
+}
+
+// Load window directly
+void LoadWindow(const char* jsonFilename, WindowProps* props)
 {
 
     // Append JSON filename to correct path
@@ -98,74 +131,13 @@ void LoadState(const char* jsonFilename, SimState* state, SimSource* source)
     // Open file
     std::ifstream ifs(jsonPath);
     json j = json::parse(ifs);
-
-    SimParams* params = &(state->params);
-
-    // Update params with data
-    params->lengthScale          = j["lengthScale"];
-    params->timeScale            = j["timeScale"];
-    params->visc                 = j["visc"];
-    params->diff                 = j["diff"];
-    params->grav                 = j["grav"];
-    params->airDens              = j["airDensity"];
-    params->massRatio            = j["massRatio"];
-    params->airTemp              = j["airTemp"];
-    params->diffTemp             = j["diffTemp"];
-    params->densDecay            = j["densDecay"];
-    params->tempFactor           = j["tempFactor"];
-    params->tempDecay            = j["tempDecay"];
-    params->closedBoundaries     = j["closedBoundaries"];
-    params->advancedCoefficients = j["advancedCoefficients"];
-    params->gravityOn            = j["gravityOn"];
-    params->temperatureOn        = j["temperatureOn"];
-    params->solverSteps          = j["solverSteps"];
-
-    // Set SimState parameters
-    state->params = *params;
-
-    // Load sources from file
-    nlohmann::json sourceList = j["sources"];
     
-    // Loop through sources
-    for(int i = 0; i < sourceList.size(); i++){
-
-        // Switch by source type
-        switch(StringToType(sourceList[i]["type"])){
-            case SimSource::gas:
-                source->CreateGasSource(StringToShape(sourceList[i]["shape"]), 
-                    sourceList[i]["flowRate"], sourceList[i]["sourceTemp"],
-                    sourceList[i]["xCenter"], sourceList[i]["yCenter"],
-                    sourceList[i]["radius"]);
-                break;
-            case SimSource::wind:
-                source->CreateWindSource(
-                    sourceList[i]["angle"], sourceList[i]["speed"],
-                    sourceList[i]["xCenter"], sourceList[i]["yCenter"]);
-                break;
-            case SimSource::windBoundary:
-                source->CreateWindBoundary(
-                    sourceList[i]["speed"]);
-                break;
-            case SimSource::heat:
-                source->CreateHeatSource(StringToShape(sourceList[i]["shape"]), 
-                    sourceList[i]["sourceTemp"],
-                    sourceList[i]["xCenter"], sourceList[i]["yCenter"],
-                    sourceList[i]["radius"]);
-                break;
-            case SimSource::energy:
-                source->CreateEnergySource(StringToShape(sourceList[i]["shape"]), 
-                    sourceList[i]["flux"], sourceList[i]["referenceTemp"], sourceList[i]["referenceDensity"],
-                    sourceList[i]["xCenter"], sourceList[i]["yCenter"],
-                    sourceList[i]["radius"]);
-                break;
-        }
-    }
-
-    // Implement sources
-    source->UpdateSources();
+    // Load properties into object
+    LoadWindow(j, props);
 
     //  Close filestream
     ifs.close();
+
 }
 
 // Convert string to enum for shape

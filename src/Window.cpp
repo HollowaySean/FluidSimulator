@@ -226,3 +226,16 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimParams* params, SimTimer* ti
     glfwSwapBuffers(window);
 
 }
+
+// Close OpenGL and ImGui contexts
+void CloseWindows(GLFWwindow* window)
+{
+    // End ImGui context
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    // End GLFW context
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}

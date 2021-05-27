@@ -27,23 +27,19 @@ int main(int argc, char** argv){
     std::string fullpath = argv[0];
     projectPath = fullpath.substr(0, fullpath.find_last_of("/")) + "/..";
 
-    // Window option
-    int resolution = 80;
-    int totalSize = 800;
-    int controlPanelSize = 200;
-    int maxFrameRate = 1000;
-
     // Initialize state objects
-    SimState testState = SimState(resolution);
+    WindowProps props;
+    LoadWindow("default", &props);
+    SimState testState = SimState(props.resolution);
     SimSource sources = SimSource(&testState);
     LoadState("default", &testState, &sources);
 
     // Set up simulation and control windows
-    GLFWwindow* window = SimWindowSetup(resolution, totalSize);
-    ControlWindowSetup(window, controlPanelSize);
+    GLFWwindow* window = SimWindowSetup(props.resolution, props.winWidth);
+    ControlWindowSetup(window, props.controlWidth);
 
     // Initialize timers
-    SimTimer timer = SimTimer(maxFrameRate);
+    SimTimer timer = SimTimer(props.maxFrameRate);
     timer.TrackFrameRatePerMS(1000);
     timer.StartSimulation();
 
@@ -66,14 +62,7 @@ int main(int argc, char** argv){
         timer.EndFrame();
     }
 
-    // End ImGui context
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
-    // End GLFW context
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    CloseWindows(window);
 
     // Exit code
     return 0;

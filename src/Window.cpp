@@ -1,6 +1,7 @@
 // Include statements
 #include "headers/Window.h"
 #include "headers/Shader.h"
+#include "headers/SimState.h"
 
 // Handles for OpenGL buffers and shaders
 unsigned int VAO, EBO;
@@ -8,9 +9,10 @@ unsigned int densTex, tempTex;
 Shader* shader;
 
 // Window size properties
-int N;
-int size;
-int cellSize;
+int resolution;
+int winWidth;
+int texWidth;
+int texSize;
 
 // OpenGL Error Callback
 void ErrorCallback(int error, const char* description)
@@ -21,7 +23,11 @@ void ErrorCallback(int error, const char* description)
 // OpenGL Resize Callback
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height);
+    // TODO: WORK ON THIS
+    int size = std::min(width, height);
+    glViewport(0, height - size, size, size);
+
+    // TODO: RESIZE/POSITION CONTROL PANEL
 }
 
 // OpenGL input script
@@ -32,12 +38,13 @@ void ProcessInput(GLFWwindow* window)
 }
 
 // OpenGL environment and background setup for simulation display
-GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
+GLFWwindow* SimWindowSetup(int N, int windowWidth)
 {
     // Save parameters
-    N = N_in + 2;
-    size = N * N;
-    cellSize = cellSize_in;
+    resolution = N;
+    winWidth = windowWidth;
+    texWidth = N + 2;
+    texSize = texWidth * texWidth;
 
     // Set up OpenGL state
     if(!glfwInit()){
@@ -51,9 +58,7 @@ GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Set up main window
-    int xSize = (N + 2) * cellSize;
-    int ySize = xSize;
-    GLFWwindow* window = glfwCreateWindow(xSize, ySize, "Fluid Simulator", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowWidth, "Fluid Simulator", NULL, NULL);
     if(window == NULL){ 
         fprintf(stderr, "GLFW failed to create window."); 
         glfwTerminate();
@@ -68,7 +73,7 @@ GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
     
     // Set up viewing window
-    glViewport(0, 0, xSize, ySize);
+    glViewport(0, 0, windowWidth, windowWidth);
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 
     // Set up shader
@@ -78,13 +83,17 @@ GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
+    // Calculate the limits of visible data
+    float uvMin = 1.0 / float(texWidth);
+    float uvMax = 1.0 - uvMin;
+
     // Copy vertices of full sized quad into buffer
     float vertices[] = {
         // Position             // UV coordinates
-         1.0f,  1.0f, 0.0f,     1.0f, 1.0f,
-         1.0f, -1.0f, 0.0f,     1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,     0.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f,     0.0f, 1.0f
+         1.0f,  1.0f, 0.0f,     uvMax, uvMax,
+         1.0f, -1.0f, 0.0f,     uvMax, uvMin,
+        -1.0f, -1.0f, 0.0f,     uvMin, uvMin,
+        -1.0f,  1.0f, 0.0f,     uvMin, uvMax
     };
     unsigned int VBO;
     glGenBuffers(1, &VBO);
@@ -107,7 +116,7 @@ GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Blank data for initial texture (revise?)
-    float blank[size] = {0.0f};
+    float blank[texSize] = {0.0f};
 
     // Set up density texture
     glGenTextures(1, &densTex);
@@ -118,7 +127,7 @@ GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     float borderColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, N, 0, GL_RED, GL_FLOAT, blank);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
 
     // Set up temperature texture
     glGenTextures(1, &tempTex);
@@ -128,7 +137,7 @@ GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, N, 0, GL_RED, GL_FLOAT, blank);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
 
     // Assign texture units
     shader -> Use();
@@ -141,20 +150,18 @@ GLFWwindow* SimWindowSetup(int N_in, int cellSize_in)
 // Processes to be called each frame for simulation window
 void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
 {
-    // Make sim window context current
-    glfwMakeContextCurrent(window);
-
     // Take keyboard and mouse input
     ProcessInput(window);
+
     // Activate shader
     shader -> Use();
 
     // Bind texture
     glActiveTexture(GL_TEXTURE0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, N, 0, GL_RED, GL_FLOAT, density);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth, 0, GL_RED, GL_FLOAT, density);
     glBindTexture(GL_TEXTURE_2D, densTex);
     glActiveTexture(GL_TEXTURE1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, N, N, 0, GL_RED, GL_FLOAT, temperature);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth,  0, GL_RED, GL_FLOAT, temperature);
     glBindTexture(GL_TEXTURE_2D, tempTex);
 
     // Render quad of triangles
@@ -162,61 +169,41 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // End of frame events
-    glfwSwapBuffers(window);
+    //glfwSwapBuffers(window);
     glfwPollEvents();
 }
 
 // Create control window for already active OpenGL environment
-GLFWwindow* ControlWindowSetup(int xSize, int ySize)
+void ControlWindowSetup(GLFWwindow* window)
 {
-
-    // Set up main window
-    GLFWwindow* window = glfwCreateWindow(xSize, ySize, "Control", NULL, NULL);
-    if(window == NULL){ 
-        fprintf(stderr, "GLFW failed to create window."); 
-        glfwTerminate();
-    }
-    glfwMakeContextCurrent(window); 
-    
-    // Create ImGui context
+    // Create ImGui context in open window
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;   
+    //ImGuiIO& io = ImGui::GetIO(); (void)io;   
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
-
-    return window;
 }
 
 // Processes to be called each frame for control window
-void ControlWindowRenderLoop(GLFWwindow* window, float* controlVal)
+void ControlWindowRenderLoop(GLFWwindow* window, SimParams* params)
 {
-    char buf[255];
-
-    // Make control window context current
-    glfwMakeContextCurrent(window);
-
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Text("Hello, world %d", 123);
-    if (ImGui::Button("Save"))
-        std::cout << "Button pressed" << std::endl;
-    ImGui::InputText("string", buf, IM_ARRAYSIZE(buf));
-    ImGui::SliderFloat("float", controlVal, 0.0f, 1.0f);
+    // Set static size of window
+    ImGui::SetNextWindowPos(ImVec2(900.0, 0.0), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(120.0, 1020.0), ImGuiCond_Once);
 
-    // bool showWindow = true;
-    // ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    // ImGui::ShowDemoWindow(&showWindow);
+    // Control panel content
+    ImGui::Begin("Window", NULL, ImGuiWindowFlags_NoResize);
+    ImGui::Text("Stuff goes here!");
 
     // Render ImGui frame
+    ImGui::End();
     ImGui::Render();
-    // int display_w, display_h;
-    // glfwGetFramebufferSize(window, &display_w, &display_h);
-    // glViewport(0, 0, display_w, display_h);
-    // glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-    // glClear(GL_COLOR_BUFFER_BIT);
+    
+    // Send ImGui rendering to OpenGL
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(window);
 

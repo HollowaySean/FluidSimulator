@@ -28,46 +28,35 @@ int main(int argc, char** argv){
     projectPath = fullpath.substr(0, fullpath.find_last_of("/")) + "/..";
 
     // Window option
-    int N = 100;
-    int totalSize = 1000;
-    int cellSize = int(round(totalSize / N));
+    int resolution = 100;
+    int totalSize = 500;
     int maxFrameRate = 100;
     float timeScale = 1.0;
 
     // Initialize state objects
-    SimState testState = SimState(N);
+    SimState testState = SimState(resolution);
     SimSource sources = SimSource(&testState);
     LoadState("default", &testState, &sources);
 
-    // Set up simulation window
-    GLFWwindow* simWindow = SimWindowSetup(N, cellSize);
-
-    // Set up control window
-    // GLFWwindow* controlWindow = ControlWindowSetup(400, 400);
-
-    // DEBUG SLASH TEST
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;   
-    ImGui_ImplGlfw_InitForOpenGL(simWindow, true);
-    ImGui_ImplOpenGL3_Init("#version 330 core");
+    // Set up simulation and control windows
+    GLFWwindow* window = SimWindowSetup(resolution, totalSize);
+    ControlWindowSetup(window);
 
     // Initialize timers
     SimTimer timer = SimTimer(maxFrameRate);
     timer.StartSimulation();
 
-    float test = 0.0;
-
     // Simulation loop
-    while(!glfwWindowShouldClose(simWindow))
+    while(!glfwWindowShouldClose(window))
     {
         // Declare beginning of frame
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-        SimWindowRenderLoop(simWindow, testState.fields.dens, testState.fields.temp);
+        SimWindowRenderLoop(window, testState.fields.dens, testState.fields.temp);
 
         // Draw control window
-        ControlWindowRenderLoop(simWindow, &test);
+        ControlWindowRenderLoop(window, &(testState.params));
 
         // Update simulation state
         testState.SimulationStep(timeScale * timer.DeltaTime());
@@ -85,8 +74,7 @@ int main(int argc, char** argv){
     ImGui::DestroyContext();
 
     // End GLFW context
-    glfwDestroyWindow(simWindow);
-    // glfwDestroyWindow(controlWindow);
+    glfwDestroyWindow(window);
     glfwTerminate();
 
     // Exit code

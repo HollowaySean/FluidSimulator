@@ -688,6 +688,36 @@ std::string SimParams::FloatName(int paramNum, ParamType type)
     return names[type][paramNum];
 }
 
+// Return tooltip string of parameter by index
+std::string SimParams::FloatTip(int paramNum, ParamType type)
+{
+    std::string tips[4][4]
+    {
+        {
+            "Length Scale (m): \nWidth of the simulation space",
+            "Time Scale (unitless): \nSeconds of simulation time per second of real time"
+        },
+        {
+            "Viscosity (m^2/s): \nKinematic viscosity at background temperature and standard pressure",
+            "Molecular Diffusion (m^2/s): \nDiffusivity at background temperature and standard pressure",
+            "Thermal Diffusion (m^2/s): \nThermal diffusivity at background temperature and standard pressure"
+        },
+        {
+            "Gravitational Force (m/s^2): \nGravitational acceleration",
+            "Background Density (kg/m^3): \nDensity of background medium",
+            "Mass Ratio (unitless): \nMolar mass of background medium divided by molar mass of fluid",
+            "Background Temperature (K): \nTemperature of background medium"
+        },
+        {
+            "Density Decay Rate (1/s): \nRate at which fluid goes proportionally to zero",
+            "Decay Temperature Factor (1/K): \nIncrease in density decay per degree above background temperature",
+            "Temperature Decay Rate (1/s): \nRate at which temperature goes proportionally to the background temperature"
+        }
+    };
+
+    return tips[type][paramNum];
+}
+
 // Return minimum for slider
 float SimParams::FloatMin(int paramNum, ParamType type)
 {

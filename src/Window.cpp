@@ -224,57 +224,66 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     // Scale parameter adjustment
     static int scaleParam = 0;
     ImGui::Text("Time & Length Scales:");
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if(ImGui::IsItemHovered()){
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(const_cast<char*>(state->params.FloatTip(scaleParam, SimParams::scale).c_str()));
+        ImGui::EndTooltip(); }
     ImGui::Combo("##scalecombo", &scaleParam, "Length Scale\0Time Scale\0");
-    // ImGui::SliderFloat("##scaleslider", 
-    //     state->params.FloatPointer(scaleParam, SimParams::scale), 
-    //     state->params.FloatMin(scaleParam, SimParams::scale),
-    //     state->params.FloatMax(scaleParam, SimParams::scale),
-    //     "%.3e");
     ImGui::InputFloat("##scalebox", 
         state->params.FloatPointer(scaleParam, SimParams::scale), 
         0.001, 0.1, "%.3e");
+    ImGui::Text("");
 
     // Fluid parameter adjustment
     static int fluidParam = 0;
-    ImGui::Text("\nFluid Properties:");
+    ImGui::Text("Fluid Properties:");
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if(ImGui::IsItemHovered()){
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(const_cast<char*>(state->params.FloatTip(fluidParam, SimParams::fluid).c_str()));
+        ImGui::EndTooltip(); }
     ImGui::Combo("##fluidcombo", &fluidParam, "Viscosity\0Molecular Diffusion\0Thermal Diffusion\0");
-    // ImGui::SliderFloat("##fluidslider", 
-    //     state->params.FloatPointer(fluidParam, SimParams::fluid), 
-    //     state->params.FloatMin(fluidParam, SimParams::fluid),
-    //     state->params.FloatMax(fluidParam, SimParams::fluid),
-    //     "%.3e");
     ImGui::InputFloat("##fluidbox", 
         state->params.FloatPointer(fluidParam, SimParams::fluid), 
         0.000001, 0.0001, "%.3e");
+    ImGui::Text("");
 
     // Background parameter adjustment
     static int backgroundParam = 0;
-    ImGui::Text("\nBackground Properties:");
+    ImGui::Text("Background Properties:");
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if(ImGui::IsItemHovered()){
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(const_cast<char*>(state->params.FloatTip(backgroundParam, SimParams::background).c_str()));
+        ImGui::EndTooltip(); }
     ImGui::Combo("##backgroundcombo", &backgroundParam, "Gravitational Force\0Background Density\0Mass Ratio\0Background Temperature\0");
-    // ImGui::SliderFloat("##backgroundslider", 
-    //     state->params.FloatPointer(backgroundParam, SimParams::background), 
-    //     state->params.FloatMin(backgroundParam, SimParams::background),
-    //     state->params.FloatMax(backgroundParam, SimParams::background),
-    //     "%.3e");
     ImGui::InputFloat("##backgroundbox", 
         state->params.FloatPointer(backgroundParam, SimParams::background), 
         0.1, 1.0, "%.3e");
+    ImGui::Text("");
 
     // Decay parameter adjustment
     static int decayParam = 0;
-    ImGui::Text("\nDecay Rates:");
+    ImGui::Text("Decay Rates:");
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if(ImGui::IsItemHovered()){
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(const_cast<char*>(state->params.FloatTip(decayParam, SimParams::decay).c_str()));
+        ImGui::EndTooltip(); }
     ImGui::Combo("##decaycombo", &decayParam, "Density Decay Rate\0Decay Temperature Factor\0Temperature Decay Rate\0");
-    // ImGui::SliderFloat("##decayslider", 
-    //     state->params.FloatPointer(decayParam, SimParams::decay), 
-    //     state->params.FloatMin(decayParam, SimParams::decay),
-    //     state->params.FloatMax(decayParam, SimParams::decay),
-    //     "%.3e");
     ImGui::InputFloat("##decaybox", 
         state->params.FloatPointer(decayParam, SimParams::decay), 
         1.0, 10.0, "%.3e");
+    ImGui::Text("");
+    ImGui::Separator();
 
     // Reset fields
-    ImGui::Text("\nWindow Controls:");
+    ImGui::Text("Window Controls:");
     if(ImGui::Button("Reset State")){
         state->ResetState();
         source->UpdateSources();

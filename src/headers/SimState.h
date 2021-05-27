@@ -29,8 +29,6 @@ struct SimParams
     float       FloatMax     (int paramNum, ParamType type);
     std::string FloatName    (int paramNum, ParamType type);
     std::string FloatTip     (int paramNum, ParamType type);
-    std::string FloatUnit    (int paramNum, ParamType type);
-    char*       FloatFormat  (int paramNum, ParamType type);
 
     // Options
     bool closedBoundaries;

@@ -4,6 +4,8 @@
 #ifndef SIMSTATE_H
 #define SIMSTATE_H
 
+#include <string>
+
 // Structure to hold onto simulation properties and physical constants
 struct SimParams
 {
@@ -19,6 +21,16 @@ struct SimParams
                 float gravity, float airDensity, float massRatio, 
                 float airTemp, float diffTemp,
                 float densDecay, float tempFactor, float tempDecay);
+
+    // Reference tools for live modification
+    enum ParamType { scale, fluid, background, decay };
+    float*      FloatPointer (int paramNum, ParamType type);
+    float       FloatMin     (int paramNum, ParamType type);
+    float       FloatMax     (int paramNum, ParamType type);
+    std::string FloatName    (int paramNum, ParamType type);
+    std::string FloatTip     (int paramNum, ParamType type);
+    std::string FloatUnit    (int paramNum, ParamType type);
+    char*       FloatFormat  (int paramNum, ParamType type);
 
     // Options
     bool closedBoundaries;
@@ -48,6 +60,9 @@ struct SimFields
     // Constructors
     SimFields();
     SimFields(int size);
+
+    // Public method
+    void ClearFields();
 
     // Current grid
     float * xVel;
@@ -82,6 +97,8 @@ class SimState
         void SetSources(float * density, float * xVelocity, float * yVelocity, float * temperature);
         void SimulationStep(float timeStep);
         void SetBoundaryClosed(bool isClosed);
+        void ResetState();
+        void ResizeGrid(int N);
 
         // Array accessors
         float * GetDensity();
@@ -134,9 +151,6 @@ class SimState
         void VelocityStep(float);
         void TemperatureStep(float);
 };
-
-// Method to display simulation state in terminal (DEPRECATED)
-void DisplayGrid(SimState stateInput, float minimum);
 
 // Preprocessor close statement
 #endif

@@ -83,6 +83,29 @@ void SimState::SetBoundaryClosed(bool isClosed)
     params.closedBoundaries = isClosed;
 }
 
+// Reset to initial state of system
+void SimState::ResetState()
+{
+    // Zero arrays
+    ZeroArrays();
+}
+
+// Modify grid parameters
+void SimState::ResizeGrid(int N)
+{
+    // Property initializations
+    this -> N = N;
+    this -> size = (N + 2) * (N + 2);
+
+    // Delete old field object and create new one
+    fields.ClearFields();
+    delete &fields;
+    this -> fields = SimFields(size);
+
+    // Zero out all arrays
+    ZeroArrays();
+}
+
 // Property accessors
 float * SimState::GetDensity() { return fields.dens; }
 float * SimState::GetXVelocity() { return fields.xVel; }
@@ -603,15 +626,136 @@ SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float 
     temperatureOn = true;
     advancedCoefficients = true;
     solverSteps = 20;
-
 }
 
+// Return pointer to float by index
+float* SimParams::FloatPointer(int paramNum, ParamType type)
+{
+    float* points[4][4]
+    {
+        {
+            &lengthScale,
+            &timeScale
+        },
+        {
+            &visc,
+            &diff,
+            &diffTemp
+        },
+        {
+            &grav,
+            &airDens,
+            &massRatio,
+            &airTemp
+        },
+        {
+            &densDecay,
+            &tempFactor,
+            &tempDecay
+        }
+    };
+
+    return points[type][paramNum];
+}
+
+// Return name of parameter by index
+std::string SimParams::FloatName(int paramNum, ParamType type)
+{
+    std::string names[4][4]
+    {
+        {
+            "Length Scale",
+            "Time Scale"
+        },
+        {
+            "Viscosity",
+            "Molecular Diffusion",
+            "Thermal Diffusion"
+        },
+        {
+            "Gravitational Force",
+            "Background Density",
+            "Mass Ratio",
+            "Background Temperature"
+        },
+        {
+            "Density Decay Rate",
+            "Decay Temperature Factor",
+            "Temperature Decay Rate"
+        }
+    };
+
+    return names[type][paramNum];
+}
+
+// Return minimum for slider
+float SimParams::FloatMin(int paramNum, ParamType type)
+{
+    float mins[4][4]
+    {
+        {
+            0.001,
+            0.0
+        },
+        {
+            0.000001,
+            0.000001,
+            0.000001
+        },
+        {
+            -100.0,
+            0.0,
+            0.0,
+            1.0
+        },
+        {
+            0.0,
+            0.0,
+            0.0
+        }
+    };
+
+    return mins[type][paramNum];
+}
+
+// Return maximum for slider
+float SimParams::FloatMax(int paramNum, ParamType type)
+{
+    float maxs[4][4]
+    {
+        {
+            100.0,
+            100.0
+        },
+        {
+            0.001,
+            0.001,
+            0.001
+        },
+        {
+            100.0,
+            1000.0,
+            1000.0,
+            10000.0
+        },
+        {
+            1000.0,
+            1000.0,
+            1000.0
+        }
+    };
+
+    return maxs[type][paramNum];
+}
+
+// Field object constructor, bare
 SimFields::SimFields()
 {
     // Default to 10 x 10 grid
     SimFields(100);
 }
 
+// Field object constructor
 SimFields::SimFields(int size)
 {
     // Initialize all arrays
@@ -629,39 +773,20 @@ SimFields::SimFields(int size)
     temp_source   = new float[size];
 }
 
-
-
-/// EXTERNAL METHODS ///
-
-// Display density on terminal
-void DisplayGrid(SimState stateInput, float minimum)
-{    
-
-    // Get values from object
-    int N = stateInput.GetN();
-    float * x = stateInput.GetDensity();
-
-    // Display on grid
-    string str = "  ";
-    for(int i = 1; i <= N; i++) { str += "--"; }
-    cout << str << endl;
-
-    for(int i = 1; i <= N; i++){
-        str = "| ";
-        for(int j = N; j >= 1; j--){
-            if(x[ind(i,j)] > minimum){
-                str += "x";
-            }else{
-                str += " ";
-            }
-            str += " ";
-        }
-        str += "|";
-        cout << str << endl;
-    }
-
-    str = "  ";
-    for(int i = 1; i <= N; i++){ str += "--"; }
-    cout << str << endl;
-
+// Delete field arrays
+void SimFields::ClearFields()
+{
+    // Delete all arrays
+    delete[] xVel;
+    delete[] yVel;
+    delete[] dens;
+    delete[] temp;
+    delete[] xVel_prev;
+    delete[] yVel_prev;
+    delete[] dens_prev;
+    delete[] temp_prev;
+    delete[] xVel_source;
+    delete[] yVel_source;
+    delete[] dens_source;
+    delete[] temp_source;
 }

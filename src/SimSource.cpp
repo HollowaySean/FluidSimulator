@@ -287,3 +287,14 @@ void SimSource::RemoveSourceAtPoint(float x, float y)
         }
     }
 }
+
+// Remove all sources
+void SimSource::RemoveAllSources()
+{
+    // Pop all and reset state
+    while(sources.size() > 0){
+        sources.pop_back();
+    }
+    simState->ResetState();
+    UpdateSources();
+}

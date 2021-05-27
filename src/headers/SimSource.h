@@ -34,6 +34,7 @@ class SimSource
         void CreateWindBoundary( float speed );
 
         void RemoveSourceAtPoint(float x, float y);
+        void RemoveAllSources();
 
         // Update sim object
         void UpdateSources();

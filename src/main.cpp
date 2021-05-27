@@ -30,16 +30,16 @@ int main(int argc, char** argv){
     // Initialize state objects
     WindowProps props;
     LoadWindow("default", &props);
-    SimState testState = SimState(props.resolution);
-    SimSource sources = SimSource(&testState);
-    LoadState("default", &testState, &sources);
+    SimState state(props.resolution);
+    SimSource sources(&state);
+    LoadState("default", &state, &sources);
 
     // Set up simulation and control windows
     GLFWwindow* window = SimWindowSetup(props.resolution, props.winWidth);
     ControlWindowSetup(window, props.controlWidth);
 
     // Initialize timers
-    SimTimer timer = SimTimer(props.maxFrameRate);
+    SimTimer timer(props.maxFrameRate);
     timer.TrackFrameRatePerMS(1000);
     timer.StartSimulation();
 
@@ -50,13 +50,13 @@ int main(int argc, char** argv){
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-        SimWindowRenderLoop(window, testState.fields.dens, testState.fields.temp);
+        SimWindowRenderLoop(window, state.fields.dens, state.fields.temp);
 
         // Draw control window
-        ControlWindowRenderLoop(window, &(testState.params), &timer);
+        ControlWindowRenderLoop(window, &state, &sources, &timer);
 
         // Update simulation state
-        testState.SimulationStep(timer.DeltaTime());
+        state.SimulationStep(timer.DeltaTime());
 
         // Sleep until frame is complete
         timer.EndFrame();

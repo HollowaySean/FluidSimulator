@@ -2,6 +2,7 @@
 #include "headers/Window.h"
 #include "headers/Shader.h"
 #include "headers/SimState.h"
+#include "headers/StateLoader.h"
 
 // Handles for OpenGL buffers and shaders
 unsigned int VAO, EBO;
@@ -14,6 +15,7 @@ int winWidth;
 int texWidth;
 int texSize;
 int controlWidth;
+float bottomPos;
 ImVec2 controlPos;
 ImVec2 controlSize;
 
@@ -26,6 +28,9 @@ void ErrorCallback(int error, const char* description)
 // OpenGL Resize Callback
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
+    // Save lower limit
+    bottomPos = float(height);
+
     // Resize window with simulation centered in window
     int size = std::min(width - controlWidth, height);
     glViewport((width - controlWidth - size) / 2, (height - size) / 2, size, size);
@@ -192,7 +197,7 @@ void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth)
 
     // Create ImGui context in open window
     ImGui::CreateContext();
-    //ImGuiIO& io = ImGui::GetIO(); (void)io;   
+    ImGuiIO& io = ImGui::GetIO(); (void)io;   
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
 
@@ -202,7 +207,7 @@ void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth)
 }
 
 // Processes to be called each frame for control window
-void ControlWindowRenderLoop(GLFWwindow* window, SimParams* params, SimTimer* timer)
+void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, SimTimer* timer)
 {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -215,6 +220,72 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimParams* params, SimTimer* ti
 
     // Control panel content
     ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoResize);
+
+    // Scale parameter adjustment
+    static int scaleParam = 0;
+    ImGui::Text("Time & Length Scales:");
+    ImGui::Combo("##scalecombo", &scaleParam, "Length Scale\0Time Scale\0");
+    // ImGui::SliderFloat("##scaleslider", 
+    //     state->params.FloatPointer(scaleParam, SimParams::scale), 
+    //     state->params.FloatMin(scaleParam, SimParams::scale),
+    //     state->params.FloatMax(scaleParam, SimParams::scale),
+    //     "%.3e");
+    ImGui::InputFloat("##scalebox", 
+        state->params.FloatPointer(scaleParam, SimParams::scale), 
+        0.001, 0.1, "%.3e");
+
+    // Fluid parameter adjustment
+    static int fluidParam = 0;
+    ImGui::Text("\nFluid Properties:");
+    ImGui::Combo("##fluidcombo", &fluidParam, "Viscosity\0Molecular Diffusion\0Thermal Diffusion\0");
+    // ImGui::SliderFloat("##fluidslider", 
+    //     state->params.FloatPointer(fluidParam, SimParams::fluid), 
+    //     state->params.FloatMin(fluidParam, SimParams::fluid),
+    //     state->params.FloatMax(fluidParam, SimParams::fluid),
+    //     "%.3e");
+    ImGui::InputFloat("##fluidbox", 
+        state->params.FloatPointer(fluidParam, SimParams::fluid), 
+        0.000001, 0.0001, "%.3e");
+
+    // Background parameter adjustment
+    static int backgroundParam = 0;
+    ImGui::Text("\nBackground Properties:");
+    ImGui::Combo("##backgroundcombo", &backgroundParam, "Gravitational Force\0Background Density\0Mass Ratio\0Background Temperature\0");
+    // ImGui::SliderFloat("##backgroundslider", 
+    //     state->params.FloatPointer(backgroundParam, SimParams::background), 
+    //     state->params.FloatMin(backgroundParam, SimParams::background),
+    //     state->params.FloatMax(backgroundParam, SimParams::background),
+    //     "%.3e");
+    ImGui::InputFloat("##backgroundbox", 
+        state->params.FloatPointer(backgroundParam, SimParams::background), 
+        0.1, 1.0, "%.3e");
+
+    // Decay parameter adjustment
+    static int decayParam = 0;
+    ImGui::Text("\nDecay Rates:");
+    ImGui::Combo("##decaycombo", &decayParam, "Density Decay Rate\0Decay Temperature Factor\0Temperature Decay Rate\0");
+    // ImGui::SliderFloat("##decayslider", 
+    //     state->params.FloatPointer(decayParam, SimParams::decay), 
+    //     state->params.FloatMin(decayParam, SimParams::decay),
+    //     state->params.FloatMax(decayParam, SimParams::decay),
+    //     "%.3e");
+    ImGui::InputFloat("##decaybox", 
+        state->params.FloatPointer(decayParam, SimParams::decay), 
+        1.0, 10.0, "%.3e");
+
+    // Reset fields
+    ImGui::Text("\nWindow Controls:");
+    if(ImGui::Button("Reset State")){
+        state->ResetState();
+        source->UpdateSources();
+    }
+    if(ImGui::Button("Reset Parameters")){
+        source->RemoveAllSources();
+        LoadState("default", state, source);
+    }
+
+    // FPS readout
+    ImGui::SetCursorPosY(bottomPos - 35.0);
     ImGui::Text("Current FPS: %f \nAverage FPS: %f", timer->CurrentFrameRate(), timer->AverageFrameRate());
 
     // Render ImGui frame
@@ -239,3 +310,4 @@ void CloseWindows(GLFWwindow* window)
     glfwDestroyWindow(window);
     glfwTerminate();
 }
+

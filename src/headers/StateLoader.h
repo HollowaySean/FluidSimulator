@@ -22,6 +22,12 @@ void LoadState(const char* jsonFilename, SimState* state, SimSource* source);
 // Load state into existing objects (including params)
 void LoadState(const char* jsonFilename, SimState* state, SimParams* params, SimSource* source);
 
+// Load only parameters
+void LoadParameters(const char* jsonFilename, SimParams* params);
+
+// Load only sources
+void LoadSources(const char* jsonFilename, SimSource* source);
+
 // Load parameters
 void LoadParams(nlohmann::json json, SimParams* params);
 

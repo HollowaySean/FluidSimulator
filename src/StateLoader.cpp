@@ -44,6 +44,41 @@ void LoadState(const char* jsonFilename, SimState* state, SimSource* source)
     LoadState(jsonFilename, state, params, source);
 }
 
+// Load only parameters
+void LoadParameters(const char* jsonFilename, SimParams* params)
+{
+    // Append JSON filename to correct path
+    std::string jsonPath = projectPath + "/src/json/" + jsonFilename + ".json";
+
+    // Open file
+    std::ifstream ifs(jsonPath);
+    json j = json::parse(ifs);
+
+    // Load simulation parameters
+    LoadParams(j, params);
+
+    //  Close filestream
+    ifs.close();
+}
+
+// Load only sources
+void LoadSources(const char* jsonFilename, SimSource* source)
+{
+    // Append JSON filename to correct path
+    std::string jsonPath = projectPath + "/src/json/" + jsonFilename + ".json";
+
+    // Open file
+    std::ifstream ifs(jsonPath);
+    json j = json::parse(ifs);
+
+    // Load simulation parameters
+    LoadSources(j, source);
+
+    //  Close filestream
+    ifs.close();
+
+}
+
 // Load parameters
 void LoadParams(nlohmann::json json, SimParams* params)
 {

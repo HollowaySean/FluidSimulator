@@ -7,7 +7,8 @@
 // Handles for OpenGL buffers and shaders
 unsigned int VAO, EBO;
 unsigned int densTex, tempTex;
-Shader* shader;
+Shader* shaders;
+Shader* currentShader;
 
 // Window size properties
 int resolution;
@@ -88,8 +89,12 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     FramebufferSizeCallback(window, windowWidth, windowWidth);
 
     // Set up shader
-    // shader = new Shader("simpleVertex", "blackbody");
-    shader = new Shader("simpleVertex", "density");
+    shaders = new Shader[3];
+    shaders[0] = Shader("simpleVertex", "blackbody");
+    shaders[1] = Shader("simpleVertex", "density");
+    shaders[2] = Shader("simpleVertex", "blank");
+
+    currentShader = &(shaders[0]);
 
     // Create Vertex Attribute Object
     glGenVertexArrays(1, &VAO);
@@ -152,9 +157,9 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
 
     // Assign texture units
-    shader -> Use();
-    glUniform1i(glGetUniformLocation(shader->ID, "densTex"), 0);
-    glUniform1i(glGetUniformLocation(shader->ID, "densTex"), 0);
+    currentShader -> Use();
+    glUniform1i(glGetUniformLocation(currentShader -> ID, "densTex"), 0);
+    glUniform1i(glGetUniformLocation(currentShader -> ID, "densTex"), 0);
 
     return window;
 }
@@ -170,7 +175,7 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     ProcessInput(window);
 
     // Activate shader
-    shader -> Use();
+    currentShader -> Use();
 
     // Bind texture
     glActiveTexture(GL_TEXTURE0);
@@ -282,13 +287,30 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     ImGui::Text("");
     ImGui::Separator();
 
+    // Display parameters
+    static int shaderParam = 0;
+    ImGui::Text("Select Shader:");
+    if(ImGui::Combo("##shader", &shaderParam, "Blackbody\0Fluid Density\0None\0"))
+        currentShader = &(shaders[shaderParam]);
+    ImGui::Text("");
+    ImGui::Separator();
+
     // Reset fields
-    ImGui::Text("Window Controls:");
-    if(ImGui::Button("Reset State")){
+    ImGui::Text("Reset:");
+    if(ImGui::Button("State", ImVec2(80.0, 20.0))){
         state->ResetState();
         source->UpdateSources();
     }
-    if(ImGui::Button("Reset Parameters")){
+    ImGui::SameLine();
+    if(ImGui::Button("Parameters", ImVec2(80.0, 20.0))){
+        LoadParameters("default", &(state->params));
+    }
+    if(ImGui::Button("Sources", ImVec2(80.0, 20.0))){
+        source->RemoveAllSources();
+        LoadSources("default", source);
+    }
+    ImGui::SameLine();
+    if(ImGui::Button("All", ImVec2(80.0, 20.0))){
         source->RemoveAllSources();
         LoadState("default", state, source);
     }
@@ -304,7 +326,6 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     // Send ImGui rendering to OpenGL
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(window);
-
 }
 
 // Close OpenGL and ImGui contexts

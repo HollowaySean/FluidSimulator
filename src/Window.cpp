@@ -89,10 +89,11 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     FramebufferSizeCallback(window, windowWidth, windowWidth);
 
     // Set up shader
-    shaders = new Shader[3];
+    shaders = new Shader[4];
     shaders[0] = Shader("simpleVertex", "blackbody");
     shaders[1] = Shader("simpleVertex", "density");
-    shaders[2] = Shader("simpleVertex", "blank");
+    shaders[2] = Shader("simpleVertex", "thermometer");
+    shaders[3] = Shader("simpleVertex", "blank");
 
     currentShader = &(shaders[0]);
 
@@ -144,7 +145,7 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     float borderColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
 
     // Set up temperature texture
     glGenTextures(1, &tempTex);
@@ -154,12 +155,14 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
 
     // Assign texture units
-    currentShader -> Use();
-    glUniform1i(glGetUniformLocation(currentShader -> ID, "densTex"), 0);
-    glUniform1i(glGetUniformLocation(currentShader -> ID, "densTex"), 0);
+    for(int i = 0; i < 4; i++){
+        shaders[i].Use();
+        glUniform1i(glGetUniformLocation(shaders[i].ID, "densTex"), 0);
+        glUniform1i(glGetUniformLocation(shaders[i].ID, "tempTex"), 1);
+    }
 
     return window;
 }
@@ -179,10 +182,10 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
 
     // Bind texture
     glActiveTexture(GL_TEXTURE0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth, 0, GL_RED, GL_FLOAT, density);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, density);
     glBindTexture(GL_TEXTURE_2D, densTex);
     glActiveTexture(GL_TEXTURE1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texWidth, texWidth,  0, GL_RED, GL_FLOAT, temperature);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth,  0, GL_RED, GL_FLOAT, temperature);
     glBindTexture(GL_TEXTURE_2D, tempTex);
 
     // Render quad of triangles
@@ -190,7 +193,7 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // End of frame events
-    //glfwSwapBuffers(window);
+    // glfwSwapBuffers(window);
     glfwPollEvents();
 }
 
@@ -290,8 +293,9 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     // Display parameters
     static int shaderParam = 0;
     ImGui::Text("Select Shader:");
-    if(ImGui::Combo("##shader", &shaderParam, "Blackbody\0Fluid Density\0None\0"))
+    if(ImGui::Combo("##shader", &shaderParam, "Blackbody\0Fluid Density\0Thermometer\0None\0")){
         currentShader = &(shaders[shaderParam]);
+    }
     ImGui::Text("");
     ImGui::Separator();
 

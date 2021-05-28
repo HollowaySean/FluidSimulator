@@ -6,7 +6,7 @@ in vec2 TexCoord;
 
 uniform sampler2D densTex;
 uniform sampler2D tempTex;
-uniform float bMod = 0.00000000000005;
+uniform float bMod = 0.000000000001;
 uniform float sbConstant = 1.0;
 
 void main()
@@ -17,11 +17,11 @@ void main()
     float intensity = dens * bMod * sbConstant * temp * temp * temp * temp;
     intensity = min(intensity, 1.0f);
 
-    float t = (temp - 1900.0) / (5200.0 - 1900.0);
+    float t = (temp - 1900.0) / (5400.0 - 1900.0);
 
-    float red = 1.0f;
-    float blue = t * (1.0 - 0.5765) + 0.5765;
-    float green = t * (1.0 - 0.1608) + 0.1608;
+    float red = 1.0;
+    float blue = (147.0 + (255.0 - 147.0) * t) / 255.0;
+    float green = (41.0 + (251.0 - 41.0) * t) / 255.0;
 
-    FragColor = intensity * vec4(red, blue, green, 1.0);
+    gl_FragColor = intensity * vec4(red, blue, green, 1.0);
 }

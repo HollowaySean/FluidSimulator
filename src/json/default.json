@@ -1,6 +1,6 @@
 {
     "params" :{
-        "lengthScale" : 1.0,
+        "lengthScale" : 0.5,
         "timeScale" : 1.0,
         "visc" : 0.000018,
         "diff" : 0.000028,
@@ -22,15 +22,15 @@
         {
             "type" : "gas",
             "shape" : "circle",
-            "flowRate" : 0.5,
+            "flowRate" : 0.1,
             "sourceTemp" : 4000.0,
             "xCenter" : 0.0,
-            "yCenter" : -0.75,
-            "radius" : 0.075
+            "yCenter" : -0.5,
+            "radius" : 0.06
         },
         {
             "type" : "windBoundary",
-            "speed" : 0.0
+            "speed" : 0.25
         }
     ],
     "windowProps" :{

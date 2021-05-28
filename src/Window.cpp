@@ -89,11 +89,13 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     FramebufferSizeCallback(window, windowWidth, windowWidth);
 
     // Set up shader
-    shaders = new Shader[4];
-    shaders[0] = Shader("simpleVertex", "blackbody");
-    shaders[1] = Shader("simpleVertex", "density");
-    shaders[2] = Shader("simpleVertex", "thermometer");
-    shaders[3] = Shader("simpleVertex", "blank");
+    int numShaders = 5;
+    shaders = new Shader[numShaders];
+    shaders[0] = Shader("simpleVertex", "blackbodySmoke");
+    shaders[1] = Shader("simpleVertex", "blackbody");
+    shaders[2] = Shader("simpleVertex", "density");
+    shaders[3] = Shader("simpleVertex", "thermometer");
+    shaders[4] = Shader("simpleVertex", "blank");
 
     currentShader = &(shaders[0]);
 
@@ -158,7 +160,7 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
 
     // Assign texture units
-    for(int i = 0; i < 4; i++){
+    for(int i = 0; i < numShaders; i++){
         shaders[i].Use();
         glUniform1i(glGetUniformLocation(shaders[i].ID, "densTex"), 0);
         glUniform1i(glGetUniformLocation(shaders[i].ID, "tempTex"), 1);
@@ -242,6 +244,9 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     ImGui::InputFloat("##scalebox", 
         state->params.FloatPointer(scaleParam, SimParams::scale), 
         0.001, 0.1, "%.3e");
+    if(*(state->params.FloatPointer(scaleParam, SimParams::scale)) < state->params.FloatMin(scaleParam, SimParams::scale)){
+        *(state->params.FloatPointer(scaleParam, SimParams::scale)) = state->params.FloatMin(scaleParam, SimParams::scale);
+    }
     ImGui::Text("");
 
     // Fluid parameter adjustment

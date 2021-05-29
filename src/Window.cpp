@@ -89,13 +89,14 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     FramebufferSizeCallback(window, windowWidth, windowWidth);
 
     // Set up shader
-    int numShaders = 5;
+    int numShaders = 6;
     shaders = new Shader[numShaders];
     shaders[0] = Shader("simpleVertex", "blackbodySmoke");
     shaders[1] = Shader("simpleVertex", "blackbody");
     shaders[2] = Shader("simpleVertex", "density");
     shaders[3] = Shader("simpleVertex", "thermometer");
-    shaders[4] = Shader("simpleVertex", "blank");
+    shaders[4] = Shader("simpleVertex", "thermodens");
+    shaders[5] = Shader("simpleVertex", "blank");
 
     currentShader = &(shaders[0]);
 
@@ -298,7 +299,7 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     // Display parameters
     static int shaderParam = 0;
     ImGui::Text("Select Shader:");
-    if(ImGui::Combo("##shader", &shaderParam, "Blackbody\0Fluid Density\0Thermometer\0None\0")){
+    if(ImGui::Combo("##shader", &shaderParam, "Physical\0Blackbody\0Fluid Density\0Thermometer\0Fluid Temp\0None\0")){
         currentShader = &(shaders[shaderParam]);
     }
     ImGui::Text("");

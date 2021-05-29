@@ -23,14 +23,14 @@
             "type" : "gas",
             "shape" : "circle",
             "flowRate" : 0.1,
-            "sourceTemp" : 4000.0,
+            "sourceTemp" : 2500.0,
             "xCenter" : 0.0,
             "yCenter" : -0.5,
             "radius" : 0.06
         },
         {
             "type" : "windBoundary",
-            "speed" : 0.25
+            "speed" : 0.0
         }
     ],
     "windowProps" :{

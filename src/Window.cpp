@@ -9,6 +9,7 @@ unsigned int VAO, EBO;
 unsigned int densTex, tempTex;
 Shader* shaders;
 Shader* currentShader;
+static int shaderParam = 0;
 
 // Window size properties
 int resolution;
@@ -220,7 +221,7 @@ void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth)
 }
 
 // Processes to be called each frame for control window
-void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, SimTimer* timer)
+void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, SimTimer* timer, WindowProps* props)
 {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -238,6 +239,8 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     ParameterGUI(state);
     ShaderGUI();
     ResetGUI(state, source);
+    WindowGUI(state, source, props, timer);
+    SourceGUI(state, source);
     FramerateGUI(timer);
 
     // Render ImGui frame
@@ -327,6 +330,15 @@ void ParameterGUI(SimState* state)
         state->params.FloatPointer(decayParam, SimParams::decay), 
         1.0, 10.0, "%.3e");
     ImGui::Text("");
+
+    // Boolean controls
+    ImGui::Checkbox("Gravity On", &(state->params.gravityOn));
+    if(ImGui::Checkbox("Temperature On", &(state->params.temperatureOn)) && !(state->params.temperatureOn)){
+        currentShader = &(shaders[2]);
+        shaderParam = 2;
+    }
+    ImGui::Checkbox("Closed Boundaries", &(state->params.closedBoundaries));
+    ImGui::Text("");
     ImGui::Separator();
 
 }
@@ -335,9 +347,8 @@ void ParameterGUI(SimState* state)
 void ShaderGUI()
 {
     // Shader select
-    static int shaderParam = 0;
     ImGui::Text("Select Shader:");
-    if(ImGui::Combo("##shader", &shaderParam, "Physical\0Blackbody\0Fluid Density\0Thermometer\0Fluid Temp\0None\0")){
+    if(ImGui::Combo("##shader", &shaderParam, "Physical\0Blackbody\0Fluid Density\0Temperature\0Fluid Temp\0None\0")){
         currentShader = &(shaders[shaderParam]);
     }
 
@@ -387,12 +398,51 @@ void ResetGUI(SimState* state, SimSource* source)
         source->RemoveAllSources();
         LoadState("default", state, source);
     }
+    ImGui::Text("");
+    ImGui::Separator();
+}
+
+// GUI for window control
+void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer* timer)
+{
+    ImGui::Text("Simulation Resolution: (NOT WORKING YET)");
+    ImGui::InputInt("##N", &resolution);
+    if(ImGui::Button("Resize", ImVec2(80.0, 20.0))){
+        texWidth = resolution + 2;
+        texSize = texWidth * texWidth;
+        props -> resolution = resolution;
+        state -> ResizeGrid(resolution);
+        source -> ResizeGrid();
+        LoadSources("default", source);
+        source -> UpdateSources();
+    }
+
+    ImGui::Text("Framerate Cap:");
+    ImGui::InputInt("##fps", &(props -> maxFrameRate));
+    if(ImGui::Button("Set Cap")){
+        if(props -> maxFrameRate > 0){
+            timer -> SetFrameRate(props -> maxFrameRate);
+            timer -> StartSimulation();
+        }else{
+            props -> maxFrameRate = timer -> MaxFrameRate();
+        }
+    }
+
+    ImGui::Text("Solver Steps:");
+    ImGui::InputInt("##solvesteps", &(state -> params.solverSteps));
+}
+
+// GUI for source control
+void SourceGUI(SimState* state, SimSource* source)
+{
+
 }
 
 // GUI for framerate functions
 void FramerateGUI(SimTimer* timer)
 {
     // FPS readout
-    ImGui::SetCursorPosY(bottomPos - 35.0);
+    // ImGui::SetCursorPosY(bottomPos - 35.0);
+    ImGui::Separator();
     ImGui::Text("Current FPS: %f \nAverage FPS: %f", timer->CurrentFrameRate(), timer->AverageFrameRate());
 }

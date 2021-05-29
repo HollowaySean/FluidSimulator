@@ -23,6 +23,7 @@ class SimTimer
         float DeltaTime();
         int RunTime();
         int CurrentFrame();
+        int MaxFrameRate();
         float CurrentFrameRate();
         float AverageFrameRate();
 

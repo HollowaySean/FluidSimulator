@@ -53,7 +53,7 @@ int main(int argc, char** argv){
         SimWindowRenderLoop(window, state.fields.dens, state.fields.temp);
 
         // Draw control window
-        ControlWindowRenderLoop(window, &state, &sources, &timer);
+        ControlWindowRenderLoop(window, &state, &sources, &timer, &props);
 
         // Update simulation state
         state.SimulationStep(timer.DeltaTime());

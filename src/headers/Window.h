@@ -41,13 +41,15 @@ void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth);
 /// Main loop render methods ///
 
 void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature);
-void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, SimTimer* timer);
+void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, SimTimer* timer, WindowProps* props);
 
 // GUI submethods
 
 void ParameterGUI(SimState* state);
 void ShaderGUI();
 void ResetGUI(SimState* state, SimSource* source);
+void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer* timer);
+void SourceGUI(SimState* state, SimSource* source);
 void FramerateGUI(SimTimer* timer);
 
 /// Callbacks ///

@@ -298,3 +298,13 @@ void SimSource::RemoveAllSources()
     simState->ResetState();
     UpdateSources();
 }
+
+// Resize grid to N + 2 by N + 2
+void SimSource::ResizeGrid()
+{
+    // For now, just change N and remove all current sources
+    N           = simState -> GetN();
+    size        = simState -> GetSize();
+    lengthScale = simState -> params.lengthScale;
+    RemoveAllSources();
+}

@@ -99,7 +99,6 @@ void SimState::ResizeGrid(int N)
 
     // Delete old field object and create new one
     fields.ClearFields();
-    delete &fields;
     this -> fields = SimFields(size);
 
     // Zero out all arrays
@@ -441,7 +440,7 @@ void SimState::VelocityStep(float dt)
     AddSource(fields.yVel, fields.yVel_prev, dt);
 
     // Perform gravitational acceleration
-    if(params.gravityOn){
+    if(params.gravityOn && params.grav != 0.0){
         Convect(fields.yVel, dt);
     }
 

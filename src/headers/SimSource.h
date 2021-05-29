@@ -38,6 +38,7 @@ class SimSource
 
         // Update sim object
         void UpdateSources();
+        void ResizeGrid();
 
     protected:
 

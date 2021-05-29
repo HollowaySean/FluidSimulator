@@ -114,6 +114,17 @@ void SimTimer::DisplayFrameRatePerMS(int msPerUpdate)
     }
 }
 
+// Set frame rate cap
+void SimTimer::SetFrameRate(int maxFrameRate)
+{
+    // Modify frame rate variables
+    this -> maxFrameRate = maxFrameRate;
+    frameCounter = 0;
+    totalFrameCounter = 0;
+    frameTime = 1000.0 / float(maxFrameRate);
+    timeStep = float(frameTime) / 1000.0;
+}
+
 // Get frame time for simulation
 float SimTimer::DeltaTime()
 {
@@ -130,6 +141,12 @@ int SimTimer::RunTime()
 int SimTimer::CurrentFrame()
 {
     return totalFrameCounter;
+}
+
+// Get frame rate cap
+int SimTimer::MaxFrameRate()
+{
+    return maxFrameRate;
 }
 
 // Get current frame rate

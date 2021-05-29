@@ -25,6 +25,14 @@ struct WindowProps
     int maxFrameRate;
 };
 
+// Struct to carry shader variables
+struct ShaderVars {
+    float brightness = 1.0;
+    float brightnessFluid = 1.0;
+    float tempHigh = 1000.0;
+    float tempLow = 300.0;
+};
+
 /// Setup methods ///
 
 GLFWwindow* SimWindowSetup(int res, int windowWidth);
@@ -34,6 +42,13 @@ void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth);
 
 void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature);
 void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, SimTimer* timer);
+
+// GUI submethods
+
+void ParameterGUI(SimState* state);
+void ShaderGUI();
+void ResetGUI(SimState* state, SimSource* source);
+void FramerateGUI(SimTimer* timer);
 
 /// Callbacks ///
 

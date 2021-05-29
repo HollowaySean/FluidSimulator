@@ -7,9 +7,9 @@ in vec2 TexCoord;
 uniform sampler2D densTex;
 uniform sampler2D tempTex;
 
-// These need to be parameterized
+// Input parameters
 uniform float bMod = 1.0;
-uniform float sbConstant = 0.000000000001;
+const float sbConstant = 0.000000000001;
 
 void main()
 {

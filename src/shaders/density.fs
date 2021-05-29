@@ -6,6 +6,8 @@ in vec2 TexCoord;
 
 uniform sampler2D densTex;
 uniform sampler2D tempTex;
+
+// Input parameters
 uniform float bMod = 1.0;
 
 void main()

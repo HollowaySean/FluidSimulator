@@ -20,6 +20,8 @@ float bottomPos;
 ImVec2 controlPos;
 ImVec2 controlSize;
 
+ShaderVars shaderVars;
+
 // OpenGL Error Callback
 void ErrorCallback(int error, const char* description)
 {
@@ -232,6 +234,37 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     // Control panel content
     ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoResize);
 
+    // Call GUI submethods
+    ParameterGUI(state);
+    ShaderGUI();
+    ResetGUI(state, source);
+    FramerateGUI(timer);
+
+    // Render ImGui frame
+    ImGui::End();
+    ImGui::Render();
+    
+    // Send ImGui rendering to OpenGL
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    glfwSwapBuffers(window);
+}
+
+// Close OpenGL and ImGui contexts
+void CloseWindows(GLFWwindow* window)
+{
+    // End ImGui context
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    // End GLFW context
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}
+
+// GUI for parameters
+void ParameterGUI(SimState* state)
+{
     // Scale parameter adjustment
     static int scaleParam = 0;
     ImGui::Text("Time & Length Scales:");
@@ -296,15 +329,45 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     ImGui::Text("");
     ImGui::Separator();
 
-    // Display parameters
+}
+
+// GUI for shader control
+void ShaderGUI()
+{
+    // Shader select
     static int shaderParam = 0;
     ImGui::Text("Select Shader:");
     if(ImGui::Combo("##shader", &shaderParam, "Physical\0Blackbody\0Fluid Density\0Thermometer\0Fluid Temp\0None\0")){
         currentShader = &(shaders[shaderParam]);
     }
+
+    // Shader parameter controls
+    if(shaderParam < 3 || shaderParam == 4){
+        ImGui::Text("Brightness:");
+        ImGui::InputFloat("##brightnessSH", &(shaderVars.brightness), 0.01, 0.1);
+        currentShader->SetFloat("bMod", shaderVars.brightness);
+    }
+    if(shaderParam == 0){
+        ImGui::Text("Fluid Brightness:");
+        ImGui::InputFloat("##fluidbrightnessSH", &(shaderVars.brightnessFluid), 0.01, 0.1);
+        currentShader->SetFloat("sMod", shaderVars.brightnessFluid);
+    }
+    if(shaderParam == 3 || shaderParam == 4){
+        ImGui::Text("Max Temperature:");
+        ImGui::InputFloat("##maxTempSH", &(shaderVars.tempHigh), 1.0, 10.0);
+        currentShader->SetFloat("maxTemp", shaderVars.tempHigh);
+        ImGui::Text("Min Temperature:");
+        ImGui::InputFloat("##minTempSH", &(shaderVars.tempLow), 1.0, 10.0);
+        currentShader->SetFloat("minTemp", shaderVars.tempLow);
+    }
+
     ImGui::Text("");
     ImGui::Separator();
+}
 
+// GUI for reset functions
+void ResetGUI(SimState* state, SimSource* source)
+{
     // Reset fields
     ImGui::Text("Reset:");
     if(ImGui::Button("State", ImVec2(80.0, 20.0))){
@@ -324,30 +387,12 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
         source->RemoveAllSources();
         LoadState("default", state, source);
     }
+}
 
+// GUI for framerate functions
+void FramerateGUI(SimTimer* timer)
+{
     // FPS readout
     ImGui::SetCursorPosY(bottomPos - 35.0);
     ImGui::Text("Current FPS: %f \nAverage FPS: %f", timer->CurrentFrameRate(), timer->AverageFrameRate());
-
-    // Render ImGui frame
-    ImGui::End();
-    ImGui::Render();
-    
-    // Send ImGui rendering to OpenGL
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    glfwSwapBuffers(window);
 }
-
-// Close OpenGL and ImGui contexts
-void CloseWindows(GLFWwindow* window)
-{
-    // End ImGui context
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
-    // End GLFW context
-    glfwDestroyWindow(window);
-    glfwTerminate();
-}
-

@@ -7,9 +7,9 @@ in vec2 TexCoord;
 uniform sampler2D densTex;
 uniform sampler2D tempTex;
 
-// Parameterize me
-const float maxTemp = 5000.0;
-const float minTemp = 300.0;
+// Input parameters
+uniform float maxTemp = 1000.0;
+uniform float minTemp = 300.0;
 
 void main()
 {

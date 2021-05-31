@@ -114,37 +114,70 @@ void LoadSources(nlohmann::json json, SimSource* source)
         // Switch by source type
         switch(StringToType(sourceList[i]["type"])){
             case SimSource::gas:
-                source->CreateGasSource(StringToShape(sourceList[i]["shape"]), 
-                    sourceList[i]["flowRate"], sourceList[i]["sourceTemp"],
-                    sourceList[i]["xCenter"], sourceList[i]["yCenter"],
-                    sourceList[i]["radius"]);
+                if(sourceList[i]["isDynamic"]){
+                    source->CreateGasSourceDynamic(StringToShape(sourceList[i]["shape"]), 
+                        sourceList[i]["flowRate"], sourceList[i]["sourceTemp"],
+                        sourceList[i]["xCenter"], sourceList[i]["yCenter"],
+                        sourceList[i]["radius"], sourceList[i]["flowVar"], sourceList[i]["tempVar"]);
+                }else{
+                    source->CreateGasSource(StringToShape(sourceList[i]["shape"]), 
+                        sourceList[i]["flowRate"], sourceList[i]["sourceTemp"],
+                        sourceList[i]["xCenter"], sourceList[i]["yCenter"],
+                        sourceList[i]["radius"]);
+                }
                 break;
             case SimSource::wind:
-                source->CreateWindSource(
-                    sourceList[i]["angle"], sourceList[i]["speed"],
-                    sourceList[i]["xCenter"], sourceList[i]["yCenter"]);
+                if(sourceList[i]["isDynamic"]){
+                    source->CreateWindSourceDynamic(
+                        sourceList[i]["angle"], sourceList[i]["speed"],
+                        sourceList[i]["xCenter"], sourceList[i]["yCenter"],
+                        sourceList[i]["speedVar"], sourceList[i]["angleVar"]);
+                }else{
+                    source->CreateWindSource(
+                        sourceList[i]["angle"], sourceList[i]["speed"],
+                        sourceList[i]["xCenter"], sourceList[i]["yCenter"]);
+                }
                 break;
             case SimSource::windBoundary:
-                source->CreateWindBoundary(
-                    sourceList[i]["speed"]);
+                if(sourceList[i]["isDynamic"]){
+                    source->CreateWindBoundaryDynamic(
+                        sourceList[i]["speed"], sourceList[i]["speedVar"]);
+                }else{
+                    source->CreateWindBoundary(
+                        sourceList[i]["speed"]);
+                }
                 break;
             case SimSource::heat:
-                source->CreateHeatSource(StringToShape(sourceList[i]["shape"]), 
-                    sourceList[i]["sourceTemp"],
-                    sourceList[i]["xCenter"], sourceList[i]["yCenter"],
-                    sourceList[i]["radius"]);
+                if(sourceList[i]["isDynamic"]){
+                    source->CreateHeatSourceDynamic(StringToShape(sourceList[i]["shape"]), 
+                        sourceList[i]["sourceTemp"],
+                        sourceList[i]["xCenter"], sourceList[i]["yCenter"],
+                        sourceList[i]["radius"], sourceList[i]["tempVar"]);
+                }else{
+                    source->CreateHeatSource(StringToShape(sourceList[i]["shape"]), 
+                        sourceList[i]["sourceTemp"],
+                        sourceList[i]["xCenter"], sourceList[i]["yCenter"],
+                        sourceList[i]["radius"]);
+                }
                 break;
             case SimSource::energy:
-                source->CreateEnergySource(StringToShape(sourceList[i]["shape"]), 
-                    sourceList[i]["flux"], sourceList[i]["referenceTemp"], sourceList[i]["referenceDensity"],
-                    sourceList[i]["xCenter"], sourceList[i]["yCenter"],
-                    sourceList[i]["radius"]);
+                if(sourceList[i]["isDynamic"]){
+                    source->CreateEnergySourceDynamic(StringToShape(sourceList[i]["shape"]), 
+                        sourceList[i]["flux"], sourceList[i]["referenceTemp"], sourceList[i]["referenceDensity"],
+                        sourceList[i]["xCenter"], sourceList[i]["yCenter"],
+                        sourceList[i]["radius"], sourceList[i]["fluxVar"]);
+                }else{
+                    source->CreateEnergySource(StringToShape(sourceList[i]["shape"]), 
+                        sourceList[i]["flux"], sourceList[i]["referenceTemp"], sourceList[i]["referenceDensity"],
+                        sourceList[i]["xCenter"], sourceList[i]["yCenter"],
+                        sourceList[i]["radius"]);
+                }
                 break;
         }
     }
 
     // Implement sources
-    source->UpdateSources();
+    source->UpdateSourcesDynamic();
 }
 
 // Load window settings
@@ -190,6 +223,7 @@ SimSource::Shape StringToShape(std::string shapeName)
 // Convert string to enum for type
 SimSource::Type StringToType(std::string typeName)
 {
+
     if(typeName.compare("gas") == 0)            { return SimSource::gas; }
     if(typeName.compare("wind") == 0)           { return SimSource::wind; }
     if(typeName.compare("windBoundary") == 0)   { return SimSource::windBoundary; }

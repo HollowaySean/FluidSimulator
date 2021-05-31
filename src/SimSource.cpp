@@ -2,6 +2,7 @@
 // Include statements
 #include "headers/SimSource.h"
 #include <cmath>
+#include <iostream>
 using namespace std;
 
 // Macros
@@ -38,6 +39,60 @@ void SimSource::UpdateSources()
             yVel[index] += source -> yVel;
             dens[index] += source -> dens;
             temp[index] = max(temp[index], source -> temp);
+        }
+    }
+}
+
+// Update sources with dynamic processes
+void SimSource::UpdateSourcesDynamic()
+{
+    // Zero out sources first
+    simState -> ResetSources();
+
+    // Loop through list of sources
+    for (const Source* source : sources){
+
+        if(source -> isDynamic){
+
+            // Loop through source indices
+            for(const int & index : source -> indices){
+
+                float ang, spd;
+
+                switch(source -> type){
+                    case gas:
+                        dens[index] += RandomNormal(source -> dens, source -> dVar);
+                        temp[index] = max(temp[index], RandomNormal(source -> temp, source -> tVar));
+                        break;
+                    case wind:
+                        ang = RandomNormal(source -> aMean, source -> aVar);
+                        spd = RandomNormal(source -> wMean, source -> wVar);
+                        xVel[index] += spd * cos(ang * 3.14159265 / 180.0);
+                        yVel[index] += spd * sin(ang * 3.14159265 / 180.0);
+                        break;
+                    case heat:
+                        temp[index] = max(temp[index], RandomNormal(source -> temp, source -> tVar));
+                        break;
+                    case energy:
+                        temp[index] = max(temp[index], RandomNormal(source -> temp, source -> tVar));
+                        break;
+                    case windBoundary:
+                        xVel[index] += RandomNormal(source -> wMean, source -> wVar);
+                        break;
+                }
+            }
+
+        }else{
+
+            // Loop through source indices
+            for(const int & index : source -> indices){
+
+                xVel[index] += source -> xVel;
+                yVel[index] += source -> yVel;
+                dens[index] += source -> dens;
+                temp[index] = max(temp[index], source -> temp);
+            }
+
         }
     }
 }
@@ -100,29 +155,27 @@ void SimSource::CreateGasSource(Shape shape, float flowRate, float sourceTemp, f
     sources.push_back(newSource);
 }
 
+// Create dynamic gas source and add to source list
+void SimSource::CreateGasSourceDynamic(Shape shape, float flowRate, float sourceTemp, float xCenter, float yCenter, float radius, float flowVar, float tempVar)
+{
+    GasSource* newGasSource = new GasSource(simState->GetN(), simState->params.lengthScale, shape, flowRate, sourceTemp, xCenter, yCenter, radius);
+    newGasSource -> isDynamic = true;
+    newGasSource -> dVar = flowVar;
+    newGasSource -> tVar = tempVar;
+    Source* newSource = newGasSource;
+    sources.push_back(newSource);
+}
+
 // Gas source constructor
 SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flowRate, float sourceTemp, float xCenter, float yCenter, float radius)
 {
-    // Calculate aperture size
-    float sourceSize = radius * radius * lengthScale * lengthScale;
-    switch(shape){
-        case square:
-            sourceSize *= 1.0;
-            break;
-        case circle:
-            sourceSize *= 3.141526 / 4.0;
-            break;
-        case diamond:
-            sourceSize *= 0.5;
-    }
-
     // Set source indices
     this -> xCenter = xCenter;
     this -> yCenter = yCenter;
     SetIndices(N, shape, xCenter, yCenter, radius);
 
     // Calculate sources
-    // this -> dens = flowRate / (sourceSize * indices.size());
+    this -> type = gas;
     this -> dens = flowRate / indices.size();
     this -> temp = sourceTemp;
     this -> xVel = 0.0;
@@ -137,10 +190,24 @@ void SimSource::CreateWindSource(float angle, float speed, float xCenter, float 
     sources.push_back(newSource);
 }
 
+// Create dynamic wind source and add to source list
+void SimSource::CreateWindSourceDynamic(float angle, float speed, float xCenter, float yCenter, float speedVar, float angleVar)
+{
+    WindSource* newWindSource = new WindSource(simState->GetN(), simState->params.lengthScale, angle, speed, xCenter, yCenter);
+    newWindSource -> isDynamic = true;
+    newWindSource -> wMean = speed;
+    newWindSource -> aMean = angle;
+    newWindSource -> wVar = speedVar;
+    newWindSource -> aVar = angleVar;
+    Source* newSource = newWindSource;
+    sources.push_back(newSource);
+}
+
 // Wind source constructor
 SimSource::WindSource::WindSource(int N, float lengthScale, float angle, float speed, float xCenter, float yCenter)
 {
     // Calculate sources
+    this -> type = wind;
     this -> dens = 0.0;
     this -> temp = 0.0;
     this -> xVel = speed * cos(angle * 3.1415926 / 180.0);
@@ -160,10 +227,21 @@ void SimSource::CreateHeatSource(Shape shape, float sourceTemp, float xCenter, f
     sources.push_back(newSource);
 }
 
+// Create heat source and add to source list
+void SimSource::CreateHeatSourceDynamic(Shape shape, float sourceTemp, float xCenter, float yCenter, float radius, float tempVar)
+{
+    HeatSource* newHeatSource = new HeatSource(simState->GetN(), simState->params.lengthScale, shape, sourceTemp, xCenter, yCenter, radius);
+    newHeatSource -> isDynamic = true;
+    newHeatSource -> tVar = tempVar;
+    Source* newSource = newHeatSource;
+    sources.push_back(newSource);
+}
+
 // Heat source constructor
 SimSource::HeatSource::HeatSource(int N, float lengthScale, Shape shape, float sourceTemp, float xCenter, float yCenter, float radius)
 {
     // Calculate sources
+    this -> type = heat;
     this -> dens = 0.0;
     this -> temp = sourceTemp;
     this -> xVel = 0.0;
@@ -183,32 +261,28 @@ void SimSource::CreateEnergySource(Shape shape, float flux, float referenceTemp,
     sources.push_back(newSource);
 }
 
+// Create gas source and add to source list
+void SimSource::CreateEnergySourceDynamic(Shape shape, float flux, float referenceTemp, float referenceDensity, float xCenter, float yCenter, float radius, float fluxVar)
+{
+    EnergySource* newEnergySource = new EnergySource(simState->GetN(), simState->params.lengthScale, shape, flux, referenceTemp, referenceDensity, xCenter, yCenter, radius);
+    newEnergySource -> isDynamic = true;
+    newEnergySource -> tVar = fluxVar;
+    Source* newSource = newEnergySource;
+    sources.push_back(newSource);
+}
+
 // Gas source constructor
 SimSource::EnergySource::EnergySource(int N, float lengthScale, Shape shape, float flux, float referenceTemp,  float referenceDensity, float xCenter, float yCenter, float radius)
 {
-    // Calculate aperture size
-    float sourceSize = radius * radius * lengthScale * lengthScale;
-    switch(shape){
-        case square:
-            sourceSize *= 1.0;
-            break;
-        case circle:
-            sourceSize *= 3.141526 / 4.0;
-            break;
-        case diamond:
-            sourceSize *= 0.5;
-    }
-
     // Set source indices
     this -> xCenter = xCenter;
     this -> yCenter = yCenter;
     SetIndices(N, shape, xCenter, yCenter, radius);
 
     // Calculate sources
-    //TODO:
-    // What did I mean by 12.5??? Figure this out. Take notes next time. Do better.
+    // NOTE: 12.5 adjusts for simple linear heat transfer
+    this -> type = energy;
     this -> dens = 0.0;
-    // this -> temp = referenceTemp + (flux / (12.5 * referenceDensity * sourceSize * indices.size()));
     this -> temp = referenceTemp + (flux / (12.5 * referenceDensity * indices.size()));
     this -> xVel = 0.0;
     this -> yVel = 0.0;
@@ -222,10 +296,22 @@ void SimSource::CreateWindBoundary(float speed)
     sources.push_back(newSource);
 }
 
+// Create wind across left and right boundaries
+void SimSource::CreateWindBoundaryDynamic(float speed, float speedVar)
+{
+    WindBoundary* newWindBoundary = new WindBoundary(simState->GetN(), speed);
+    newWindBoundary -> isDynamic = true;
+    newWindBoundary -> wVar = speedVar;
+    newWindBoundary -> wMean = speed;
+    Source* newSource = newWindBoundary;
+    sources.push_back(newSource);
+}
+
 // Wind boundary constructor
 SimSource::WindBoundary::WindBoundary(int N, float speed)
 {
     // Set sources
+    this -> type = windBoundary;
     this -> dens = 0.0;
     this -> temp = 0.0;
     this -> xVel = speed;
@@ -318,4 +404,20 @@ void SimSource::Reset()
     yVel = simState -> fields.yVel_source;
     dens = simState -> fields.dens_source;
     temp = simState -> fields.temp_source;
+}
+
+// Non-class functions //
+
+// Generate normal distributed random variable
+float RandomNormal(float mean, float dev)
+{
+    // Don't bother using generator if no deviation
+    if(dev == 0.0){
+        return mean;
+    }
+
+    // Initialize a generator and return a random value
+    static default_random_engine generator(time(0));
+    normal_distribution<float> distribution(mean, dev);
+    return distribution(generator);
 }

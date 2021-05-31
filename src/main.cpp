@@ -55,6 +55,9 @@ int main(int argc, char** argv){
         // Draw control window
         ControlWindowRenderLoop(window, &state, &sources, &timer, &props);
 
+        // Update dynamic sources
+        sources.UpdateSourcesDynamic();
+
         // Update simulation state
         state.SimulationStep(timer.DeltaTime());
 

@@ -5,6 +5,7 @@
 
 // Include statements
 #include <list>
+#include <random>
 #include "SimState.h"
 
 // Structure which contains a density, velocity, or heat source for simulator
@@ -23,21 +24,40 @@ class SimSource
         SimState* simState;
 
         // Public methods
-        void CreateGasSource(    Shape shape, float flowRate, float sourceTemp, 
+        void CreateGasSource(   Shape shape, float flowRate, float sourceTemp, 
                                 float xCenter, float yCenter, float radius);
-        void CreateWindSource(   float angle, float speed, 
+        void CreateGasSourceDynamic(    
+                                Shape shape, float flowRate, float sourceTemp, 
+                                float xCenter, float yCenter, float radius, 
+                                float flowVar, float tempVar);
+        void CreateWindSource(  float angle, float speed, 
                                 float xCenter, float yCenter);
-        void CreateHeatSource(   Shape shape, float sourceTemp, 
+        void CreateWindSourceDynamic(   
+                                float angle, float speed, 
+                                float xCenter, float yCenter,
+                                float speedVar, float angleVar);
+        void CreateHeatSource(  Shape shape, float sourceTemp, 
                                 float xCenter, float yCenter, float radius);
-        void CreateEnergySource( Shape shape, float flux, float referenceTemp, float referenceDensity, 
+        void CreateHeatSourceDynamic(  
+                                Shape shape, float sourceTemp, 
+                                float xCenter, float yCenter, float radius,
+                                float tempVar);
+        void CreateEnergySource(Shape shape, float flux, float referenceTemp, float referenceDensity, 
                                 float xCenter, float yCenter, float radius);
-        void CreateWindBoundary( float speed );
+        void CreateEnergySourceDynamic(
+                                Shape shape, float flux, float referenceTemp, float referenceDensity, 
+                                float xCenter, float yCenter, float radius,
+                                float fluxVar);
+        void CreateWindBoundary(float speed );
+        void CreateWindBoundaryDynamic(
+                                float speed, float speedVar);
 
         void RemoveSourceAtPoint(float x, float y);
         void RemoveAllSources();
 
         // Update sim object
         void UpdateSources();
+        void UpdateSourcesDynamic();
         void Reset();
 
     protected:
@@ -65,8 +85,9 @@ class SimSource
                 // Public methods
                 void SetActive(bool isActive);
 
-                // Active flag
+                // Flags
                 bool isActive = true;
+                bool isDynamic = false;
 
                 // Arrays of sources
                 std::list<int> indices;
@@ -74,6 +95,14 @@ class SimSource
                 float yVel;
                 float dens;
                 float temp;
+
+                // Dynamic properties
+                float wVar = 0.0;
+                float aVar = 0.0;
+                float wMean = 0.0;
+                float aMean = 0.0;
+                float dVar = 0.0;
+                float tVar = 0.0;
 
                 // Index calculation method
                 void SetIndices(int N, Shape shape, float xCenter, float yCenter, float radius);
@@ -114,6 +143,9 @@ class SimSource
         // Protected methods
         void RemoveSource(Source* source);
 };
+
+// Helper method for normal distribution generation
+float RandomNormal(float mean, float dev);
 
 // Closing preprocessor statement
 #endif

@@ -20,17 +20,22 @@
     },
     "sources" :[
         {
+            "isDynamic" : true,
             "type" : "gas",
-            "shape" : "circle",
-            "flowRate" : 100.0,
+            "shape" : "diamond",
+            "flowRate" : 25.0,
             "sourceTemp" : 2500.0,
             "xCenter" : 0.0,
             "yCenter" : -0.5,
-            "radius" : 0.05
+            "radius" : 0.05,
+            "flowVar" : 1.0,
+            "tempVar" : 100.0
         },
         {
+            "isDynamic" : true,
             "type" : "windBoundary",
-            "speed" : 0.05
+            "speed" : 0.0,
+            "speedVar" : 0.01
         }
     ],
     "windowProps" :{

@@ -290,7 +290,7 @@ void ParameterGUI(SimState* state)
     if(*(state->params.FloatPointer(scaleParam, SimParams::scale)) < state->params.FloatMin(scaleParam, SimParams::scale)){
         *(state->params.FloatPointer(scaleParam, SimParams::scale)) = state->params.FloatMin(scaleParam, SimParams::scale);
     }
-    ImGui::Text("");
+    // ImGui::Text("");
 
     // Fluid parameter adjustment
     static int fluidParam = 0;
@@ -305,7 +305,7 @@ void ParameterGUI(SimState* state)
     ImGui::InputFloat("##fluidbox", 
         state->params.FloatPointer(fluidParam, SimParams::fluid), 
         0.000001, 0.0001, "%.3e");
-    ImGui::Text("");
+    // ImGui::Text("");
 
     // Background parameter adjustment
     static int backgroundParam = 0;
@@ -320,7 +320,7 @@ void ParameterGUI(SimState* state)
     ImGui::InputFloat("##backgroundbox", 
         state->params.FloatPointer(backgroundParam, SimParams::background), 
         0.1, 1.0, "%.3e");
-    ImGui::Text("");
+    // ImGui::Text("");
 
     // Decay parameter adjustment
     static int decayParam = 0;
@@ -335,7 +335,7 @@ void ParameterGUI(SimState* state)
     ImGui::InputFloat("##decaybox", 
         state->params.FloatPointer(decayParam, SimParams::decay), 
         1.0, 10.0, "%.3e");
-    ImGui::Text("");
+    // ImGui::Text("");
 
     // Boolean controls
     ImGui::Checkbox("Gravity On", &(state->params.gravityOn));
@@ -380,6 +380,8 @@ void ShaderGUI()
 
     static bool smoothingOn = true;
     if(ImGui::Checkbox("Smooth Image", &smoothingOn)){
+
+        // Change filtering mode of texture
         if(smoothingOn){
             glBindTexture(GL_TEXTURE_2D, densTex);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -391,6 +393,10 @@ void ShaderGUI()
             glBindTexture(GL_TEXTURE_2D, densTex);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
+
+        // Clear color to avoid flickering
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
     }
 
     ImGui::Text("");
@@ -475,6 +481,9 @@ void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer*
 
     ImGui::Text("Solver Steps:");
     ImGui::InputInt("##solvesteps", &(state -> params.solverSteps));
+
+    ImGui::Text("");
+    ImGui::Separator();
 }
 
 // GUI for source control
@@ -487,7 +496,5 @@ void SourceGUI(SimState* state, SimSource* source)
 void FramerateGUI(SimTimer* timer)
 {
     // FPS readout
-    // ImGui::SetCursorPosY(bottomPos - 35.0);
-    ImGui::Separator();
     ImGui::Text("Current FPS: %f \nAverage FPS: %f", timer->CurrentFrameRate(), timer->AverageFrameRate());
 }

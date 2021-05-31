@@ -83,6 +83,11 @@ void SimSource::Source::SetIndices(int N, Shape shape, float xCenter, float yCen
             }
         }
     }
+
+    // Return single point if size is too small to cover any integral points
+    if(indices.size() == 0){
+        indices.push_back(indN(int(round(xCInd)), int(round(yCInd)), N));
+    }
 }
 
 
@@ -117,7 +122,8 @@ SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flo
     SetIndices(N, shape, xCenter, yCenter, radius);
 
     // Calculate sources
-    this -> dens = flowRate / (sourceSize * indices.size());
+    // this -> dens = flowRate / (sourceSize * indices.size());
+    this -> dens = flowRate / indices.size();
     this -> temp = sourceTemp;
     this -> xVel = 0.0;
     this -> yVel = 0.0;
@@ -199,8 +205,11 @@ SimSource::EnergySource::EnergySource(int N, float lengthScale, Shape shape, flo
     SetIndices(N, shape, xCenter, yCenter, radius);
 
     // Calculate sources
+    //TODO:
+    // What did I mean by 12.5??? Figure this out. Take notes next time. Do better.
     this -> dens = 0.0;
-    this -> temp = referenceTemp + (flux / (12.5 * referenceDensity * sourceSize * indices.size()));
+    // this -> temp = referenceTemp + (flux / (12.5 * referenceDensity * sourceSize * indices.size()));
+    this -> temp = referenceTemp + (flux / (12.5 * referenceDensity * indices.size()));
     this -> xVel = 0.0;
     this -> yVel = 0.0;
 }

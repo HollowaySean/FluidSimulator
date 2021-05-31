@@ -404,7 +404,12 @@ void SimState::Convect(float * v, float dt)
             }
 
             // Calculate buoyant force
-            float bForce = (density - params.airDens) / density;
+            float bForce;
+            if(density == 0.0){
+                bForce = 1.0;
+            }else{
+                bForce = (density - params.airDens) / density;
+            }
 
             // Apply force to stream vector
             v[ind(i,j)] += g * bForce;

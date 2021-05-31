@@ -29,10 +29,10 @@ int main(int argc, char** argv){
 
     // Initialize state objects
     WindowProps props;
-    LoadWindow("default", &props);
+    LoadWindow("match", &props);
     SimState state(props.resolution);
     SimSource sources(&state);
-    LoadState("default", &state, &sources);
+    LoadState("match", &state, &sources);
 
     // Set up simulation and control windows
     GLFWwindow* window = SimWindowSetup(props.resolution, props.winWidth);

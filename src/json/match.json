@@ -41,7 +41,7 @@
     "windowProps" :{
         "resolution" : 80,
         "winWidth" : 800,
-        "controlWidth" : 200,
+        "controlWidth" : 240,
         "maxFrameRate" : 1000
     }
 }

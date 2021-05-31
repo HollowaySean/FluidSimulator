@@ -11,6 +11,7 @@ Shader* shaders;
 Shader* currentShader;
 static int shaderParam = 0;
 int numShaders = 6;
+std::string defaultJSON = "match";
 
 // Window size properties
 int resolution;
@@ -174,6 +175,7 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     glfwPollEvents();
 }
 
+// Set up textures in OpenGL
 void SetupTextures()
 {
 
@@ -414,18 +416,36 @@ void ResetGUI(SimState* state, SimSource* source)
     }
     ImGui::SameLine();
     if(ImGui::Button("Parameters", ImVec2(80.0, 20.0))){
-        LoadParameters("default", &(state->params));
+        LoadParameters(const_cast<char*>(defaultJSON.c_str()), &(state->params));
     }
     if(ImGui::Button("Sources", ImVec2(80.0, 20.0))){
         source->RemoveAllSources();
-        LoadSources("default", source);
+        LoadSources(const_cast<char*>(defaultJSON.c_str()), source);
     }
     ImGui::SameLine();
     if(ImGui::Button("All", ImVec2(80.0, 20.0))){
         source->RemoveAllSources();
         state->ResetState();
-        LoadState("default", state, source);
+        LoadState(const_cast<char*>(defaultJSON.c_str()), state, source);
     }
+
+    // Load preset JSON files
+    static int preset = 0;
+    if(ImGui::Button("Load Preset: ", ImVec2(170.0, 20.0))){
+        switch(preset){
+            case 0:
+                defaultJSON = "match";
+                break;
+            case 1:
+                defaultJSON = "fog";
+                break;
+        }
+        source->RemoveAllSources();
+        state->ResetState();
+        LoadState(const_cast<char*>(defaultJSON.c_str()), state, source);
+    }
+    ImGui::Combo("##preset", &preset, "Match\0Fog\0");
+
     ImGui::Text("");
     ImGui::Separator();
 }
@@ -465,7 +485,7 @@ void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer*
         // Resize simulation objects
         state -> ResizeGrid(resolution);
         source -> Reset();
-        LoadSources("default", source);
+        LoadSources(const_cast<char*>(defaultJSON.c_str()), source);
     }
 
     ImGui::Text("Framerate Cap:");

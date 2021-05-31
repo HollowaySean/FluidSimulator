@@ -96,6 +96,7 @@ class SimState
         void SimulationStep(float timeStep);
         void SetBoundaryClosed(bool isClosed);
         void ResetState();
+        void ResetSources();
         void ResizeGrid(int N);
 
         // Array accessors
@@ -129,7 +130,6 @@ class SimState
         int size;
 
         // Internal Methods
-        void ZeroArrays();
         void SetSource(float *, float *);
         void SetConstantSource(float *, float);
         void AddSource(float *, float *, float);

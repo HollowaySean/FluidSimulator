@@ -25,6 +25,9 @@ SimSource::SimSource(SimState* simState)
 // Update sources in SimState object
 void SimSource::UpdateSources()
 {
+    // Zero out sources first
+    simState -> ResetSources();
+
     // Loop through list of sources
     for (const Source* source : sources){
 
@@ -291,7 +294,7 @@ void SimSource::RemoveAllSources()
         delete sources.back();
         sources.pop_back();
     }
-    simState->ResetState();
+    simState->ResetSources();
     UpdateSources();
 }
 

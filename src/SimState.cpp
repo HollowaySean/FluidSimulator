@@ -29,7 +29,7 @@ SimState::SimState(int N)
     this -> fields = SimFields(size);
 
     // Zero out all arrays
-    ZeroArrays();
+    ResetState();
 }
 
 // Constructor taking param struct
@@ -44,7 +44,7 @@ SimState::SimState(int N, SimParams paramsIn)
     this -> fields = SimFields(size);
 
     // Zero out all arrays
-    ZeroArrays();
+    ResetState();
 }
 
 
@@ -86,8 +86,29 @@ void SimState::SetBoundaryClosed(bool isClosed)
 // Reset to initial state of system
 void SimState::ResetState()
 {
-    // Zero arrays
-    ZeroArrays();
+    // Initialize arrays to 0
+    SetConstantSource(fields.dens, 0.0);
+    SetConstantSource(fields.xVel, 0.0);
+    SetConstantSource(fields.yVel, 0.0);
+    SetConstantSource(fields.temp, params.airTemp);
+    SetConstantSource(fields.dens_prev, 0.0);
+    SetConstantSource(fields.xVel_prev, 0.0);
+    SetConstantSource(fields.yVel_prev, 0.0);
+    SetConstantSource(fields.temp_prev, params.airTemp);
+    SetConstantSource(fields.dens_source, 0.0);
+    SetConstantSource(fields.xVel_source, 0.0);
+    SetConstantSource(fields.yVel_source, 0.0);
+    SetConstantSource(fields.temp_source, params.airTemp);
+}
+
+// Reset sources to initial state
+void SimState::ResetSources()
+{
+    // Zero source arrays
+    SetConstantSource(fields.dens_source, 0.0);
+    SetConstantSource(fields.xVel_source, 0.0);
+    SetConstantSource(fields.yVel_source, 0.0);
+    SetConstantSource(fields.temp_source, params.airTemp);
 }
 
 // Modify grid parameters
@@ -103,7 +124,7 @@ void SimState::ResizeGrid(int N)
     this -> fields = fields;
 
     // Zero out all arrays
-    ZeroArrays();
+    ResetState();
 }
 
 // Property accessors
@@ -158,24 +179,6 @@ float SimState::AdjustedThermalDiffusivity(int ind, SimParams params, SimFields 
 
 
 //// SIMSTATE PRIVATE METHODS ////
-
-// Set all arrays to zero
-void SimState::ZeroArrays()
-{
-    // Initialize arrays to 0
-    SetConstantSource(fields.dens, 0.0);
-    SetConstantSource(fields.xVel, 0.0);
-    SetConstantSource(fields.yVel, 0.0);
-    SetConstantSource(fields.temp, params.airTemp);
-    SetConstantSource(fields.dens_prev, 0.0);
-    SetConstantSource(fields.xVel_prev, 0.0);
-    SetConstantSource(fields.yVel_prev, 0.0);
-    SetConstantSource(fields.temp_prev, params.airTemp);
-    SetConstantSource(fields.dens_source, 0.0);
-    SetConstantSource(fields.xVel_source, 0.0);
-    SetConstantSource(fields.yVel_source, 0.0);
-    SetConstantSource(fields.temp_source, params.airTemp);
-}
 
 // Set array values to those of other array
 void SimState::SetSource(float * x, float * x_set)

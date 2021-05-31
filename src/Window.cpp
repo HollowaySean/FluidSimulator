@@ -5,7 +5,7 @@
 #include "headers/StateLoader.h"
 
 // Handles for OpenGL buffers and shaders
-unsigned int VAO, EBO;
+unsigned int VAO, VBO, EBO;
 unsigned int densTex, tempTex;
 Shader* shaders;
 Shader* currentShader;
@@ -119,7 +119,6 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
         -1.0f, -1.0f, 0.0f,     uvMin, uvMin,
         -1.0f,  1.0f, 0.0f,     uvMin, uvMax
     };
-    unsigned int VBO;
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -379,6 +378,21 @@ void ShaderGUI()
         currentShader->SetFloat("minTemp", shaderVars.tempLow);
     }
 
+    static bool smoothingOn = true;
+    if(ImGui::Checkbox("Smooth Image", &smoothingOn)){
+        if(smoothingOn){
+            glBindTexture(GL_TEXTURE_2D, densTex);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, densTex);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }else{
+            glBindTexture(GL_TEXTURE_2D, densTex);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glBindTexture(GL_TEXTURE_2D, densTex);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        }
+    }
+
     ImGui::Text("");
     ImGui::Separator();
 }
@@ -403,6 +417,7 @@ void ResetGUI(SimState* state, SimSource* source)
     ImGui::SameLine();
     if(ImGui::Button("All", ImVec2(80.0, 20.0))){
         source->RemoveAllSources();
+        state->ResetState();
         LoadState("default", state, source);
     }
     ImGui::Text("");
@@ -413,12 +428,33 @@ void ResetGUI(SimState* state, SimSource* source)
 void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer* timer)
 {
     ImGui::Text("Simulation Resolution:");
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if(ImGui::IsItemHovered()){
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted("Resizes the simulation grid to N x N, where N is the resolution value");
+        ImGui::EndTooltip(); }
     ImGui::InputInt("##N", &resolution);
     if(ImGui::Button("Resize", ImVec2(80.0, 20.0))){
 
         // Resize shader texture sizes
         texWidth = resolution + 2;
         texSize = texWidth * texWidth;
+
+        // Calculate the limits of visible data
+        float uvMin = 1.0 / float(texWidth);
+        float uvMax = 1.0 - uvMin;
+
+        // Copy vertices of full sized quad into buffer
+        float vertices[] = {
+            // Position             // UV coordinates
+            1.0f,  1.0f, 0.0f,     uvMax, uvMax,
+            1.0f, -1.0f, 0.0f,     uvMax, uvMin,
+            -1.0f, -1.0f, 0.0f,     uvMin, uvMin,
+            -1.0f,  1.0f, 0.0f,     uvMin, uvMax
+        };
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
         // Resize simulation objects
         state -> ResizeGrid(resolution);

@@ -38,14 +38,9 @@ class SimSource
 
         // Update sim object
         void UpdateSources();
-        void ResizeGrid();
+        void Reset();
 
     protected:
-
-        // Saved data from SimState
-        int N;
-        int size;
-        float lengthScale;
 
         // Pointers to source grids
         float * xVel;

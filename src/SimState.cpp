@@ -99,7 +99,8 @@ void SimState::ResizeGrid(int N)
 
     // Delete old field object and create new one
     fields.ClearFields();
-    this -> fields = SimFields(size);
+    SimFields fields(size);
+    this -> fields = fields;
 
     // Zero out all arrays
     ZeroArrays();

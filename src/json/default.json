@@ -22,7 +22,7 @@
         {
             "type" : "gas",
             "shape" : "circle",
-            "flowRate" : 0.1,
+            "flowRate" : 0.025,
             "sourceTemp" : 2500.0,
             "xCenter" : 0.0,
             "yCenter" : -0.5,

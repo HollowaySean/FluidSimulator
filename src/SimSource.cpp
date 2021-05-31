@@ -15,11 +15,6 @@ SimSource::SimSource(SimState* simState)
     // Save pointer to SimState
     this -> simState = simState;
 
-    // Retrieve parameters from SimState
-    N           = simState -> GetN();
-    size        = simState -> GetSize();
-    lengthScale = simState -> params.lengthScale;
-
     // Retrieve pointers to source arrays
     xVel = simState -> fields.xVel_source;
     yVel = simState -> fields.yVel_source;
@@ -92,7 +87,7 @@ void SimSource::Source::SetIndices(int N, Shape shape, float xCenter, float yCen
 // Create gas source and add to source list
 void SimSource::CreateGasSource(Shape shape, float flowRate, float sourceTemp, float xCenter, float yCenter, float radius)
 {
-    GasSource* newGasSource = new GasSource(N, lengthScale, shape, flowRate, sourceTemp, xCenter, yCenter, radius);
+    GasSource* newGasSource = new GasSource(simState->GetN(), simState->params.lengthScale, shape, flowRate, sourceTemp, xCenter, yCenter, radius);
     Source* newSource = newGasSource;
     sources.push_back(newSource);
 }
@@ -128,7 +123,7 @@ SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flo
 // Create wind source and add to source list
 void SimSource::CreateWindSource(float angle, float speed, float xCenter, float yCenter)
 {
-    WindSource* newWindSource = new WindSource(N, lengthScale, angle, speed, xCenter, yCenter);
+    WindSource* newWindSource = new WindSource(simState->GetN(), simState->params.lengthScale, angle, speed, xCenter, yCenter);
     Source* newSource = newWindSource;
     sources.push_back(newSource);
 }
@@ -151,7 +146,7 @@ SimSource::WindSource::WindSource(int N, float lengthScale, float angle, float s
 // Create heat source and add to source list
 void SimSource::CreateHeatSource(Shape shape, float sourceTemp, float xCenter, float yCenter, float radius)
 {
-    HeatSource* newHeatSource = new HeatSource(N, lengthScale, shape, sourceTemp, xCenter, yCenter, radius);
+    HeatSource* newHeatSource = new HeatSource(simState->GetN(), simState->params.lengthScale, shape, sourceTemp, xCenter, yCenter, radius);
     Source* newSource = newHeatSource;
     sources.push_back(newSource);
 }
@@ -174,7 +169,7 @@ SimSource::HeatSource::HeatSource(int N, float lengthScale, Shape shape, float s
 // Create gas source and add to source list
 void SimSource::CreateEnergySource(Shape shape, float flux, float referenceTemp, float referenceDensity, float xCenter, float yCenter, float radius)
 {
-    EnergySource* newEnergySource = new EnergySource(N, lengthScale, shape, flux, referenceTemp, referenceDensity, xCenter, yCenter, radius);
+    EnergySource* newEnergySource = new EnergySource(simState->GetN(), simState->params.lengthScale, shape, flux, referenceTemp, referenceDensity, xCenter, yCenter, radius);
     Source* newSource = newEnergySource;
     sources.push_back(newSource);
 }
@@ -210,7 +205,7 @@ SimSource::EnergySource::EnergySource(int N, float lengthScale, Shape shape, flo
 // Create wind across left and right boundaries
 void SimSource::CreateWindBoundary(float speed)
 {
-    WindBoundary* newWindBoundary = new WindBoundary(N, speed);
+    WindBoundary* newWindBoundary = new WindBoundary(simState->GetN(), speed);
     Source* newSource = newWindBoundary;
     sources.push_back(newSource);
 }
@@ -293,6 +288,7 @@ void SimSource::RemoveAllSources()
 {
     // Pop all and reset state
     while(sources.size() > 0){
+        delete sources.back();
         sources.pop_back();
     }
     simState->ResetState();
@@ -300,11 +296,14 @@ void SimSource::RemoveAllSources()
 }
 
 // Resize grid to N + 2 by N + 2
-void SimSource::ResizeGrid()
+void SimSource::Reset()
 {
-    // For now, just change N and remove all current sources
-    N           = simState -> GetN();
-    size        = simState -> GetSize();
-    lengthScale = simState -> params.lengthScale;
+    // Remove all sources
     RemoveAllSources();
+
+    // Retrieve pointers to source arrays
+    xVel = simState -> fields.xVel_source;
+    yVel = simState -> fields.yVel_source;
+    dens = simState -> fields.dens_source;
+    temp = simState -> fields.temp_source;
 }

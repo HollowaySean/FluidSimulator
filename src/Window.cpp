@@ -10,6 +10,7 @@ unsigned int densTex, tempTex;
 Shader* shaders;
 Shader* currentShader;
 static int shaderParam = 0;
+int numShaders = 6;
 
 // Window size properties
 int resolution;
@@ -92,7 +93,6 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     FramebufferSizeCallback(window, windowWidth, windowWidth);
 
     // Set up shader
-    int numShaders = 6;
     shaders = new Shader[numShaders];
     shaders[0] = Shader("simpleVertex", "blackbodySmoke");
     shaders[1] = Shader("simpleVertex", "blackbody");
@@ -139,36 +139,8 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    // Blank data for initial texture (revise?)
-    float blank[texSize] = {0.0f};
-
-    // Set up density texture
-    glGenTextures(1, &densTex);
-    glBindTexture(GL_TEXTURE_2D, densTex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    float borderColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
-
-    // Set up temperature texture
-    glGenTextures(1, &tempTex);
-    glBindTexture(GL_TEXTURE_2D, tempTex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
-
-    // Assign texture units
-    for(int i = 0; i < numShaders; i++){
-        shaders[i].Use();
-        glUniform1i(glGetUniformLocation(shaders[i].ID, "densTex"), 0);
-        glUniform1i(glGetUniformLocation(shaders[i].ID, "tempTex"), 1);
-    }
+    // Set up textures for shader
+    SetupTextures();
 
     return window;
 }
@@ -201,6 +173,41 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     // End of frame events
     // glfwSwapBuffers(window);
     glfwPollEvents();
+}
+
+void SetupTextures()
+{
+
+    // Blank data for initial texture (revise?)
+    float blank[texSize] = {0.0f};
+
+    // Set up density texture
+    glGenTextures(1, &densTex);
+    glBindTexture(GL_TEXTURE_2D, densTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
+
+    // Set up temperature texture
+    glGenTextures(1, &tempTex);
+    glBindTexture(GL_TEXTURE_2D, tempTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
+
+    // Assign texture units
+    for(int i = 0; i < numShaders; i++){
+        shaders[i].Use();
+        glUniform1i(glGetUniformLocation(shaders[i].ID, "densTex"), 0);
+        glUniform1i(glGetUniformLocation(shaders[i].ID, "tempTex"), 1);
+    }
 }
 
 // Create control window for already active OpenGL environment
@@ -405,16 +412,18 @@ void ResetGUI(SimState* state, SimSource* source)
 // GUI for window control
 void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer* timer)
 {
-    ImGui::Text("Simulation Resolution: (NOT WORKING YET)");
+    ImGui::Text("Simulation Resolution:");
     ImGui::InputInt("##N", &resolution);
     if(ImGui::Button("Resize", ImVec2(80.0, 20.0))){
+
+        // Resize shader texture sizes
         texWidth = resolution + 2;
         texSize = texWidth * texWidth;
-        props -> resolution = resolution;
+
+        // Resize simulation objects
         state -> ResizeGrid(resolution);
-        source -> ResizeGrid();
+        source -> Reset();
         LoadSources("default", source);
-        source -> UpdateSources();
     }
 
     ImGui::Text("Framerate Cap:");

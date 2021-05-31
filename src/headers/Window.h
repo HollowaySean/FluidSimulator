@@ -36,6 +36,7 @@ struct ShaderVars {
 /// Setup methods ///
 
 GLFWwindow* SimWindowSetup(int res, int windowWidth);
+void SetupTextures();
 void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth);
 
 /// Main loop render methods ///

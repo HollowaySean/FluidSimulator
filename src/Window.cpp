@@ -6,12 +6,15 @@
 
 // Handles for OpenGL buffers and shaders
 unsigned int VAO, VBO, EBO;
+unsigned int cursorVBO, cursorEBO;
+unsigned int * pInd;
 unsigned int densTex, tempTex;
 Shader* shaders;
 Shader* currentShader;
 static int shaderParam = 0;
-int numShaders = 6;
+int numShaders = 7;
 std::string defaultJSON = "match";
+bool showCursor = false;
 
 // Window size properties
 int resolution;
@@ -53,6 +56,13 @@ void ProcessInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
 }
 
+// OpenGL key press callback
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if(key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        showCursor = !showCursor;
+}
+
 // OpenGL environment and background setup for simulation display
 GLFWwindow* SimWindowSetup(int N, int windowWidth)
 {
@@ -86,12 +96,14 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     if(GLEW_OK != err){
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
-    //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
     
     // Set up viewing window
     glViewport(0, 0, windowWidth, windowWidth);
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
     FramebufferSizeCallback(window, windowWidth, windowWidth);
+
+    // Set input callback
+    glfwSetKeyCallback(window, KeyCallback);
 
     // Set up shader
     shaders = new Shader[numShaders];
@@ -101,6 +113,7 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     shaders[3] = Shader("simpleVertex", "thermometer");
     shaders[4] = Shader("simpleVertex", "thermodens");
     shaders[5] = Shader("simpleVertex", "blank");
+    shaders[6] = Shader("simpleVertex", "cursor");
 
     currentShader = &(shaders[0]);
 
@@ -115,10 +128,15 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     // Copy vertices of full sized quad into buffer
     float vertices[] = {
         // Position             // UV coordinates
-         1.0f,  1.0f, 0.0f,     uvMax, uvMax,
-         1.0f, -1.0f, 0.0f,     uvMax, uvMin,
-        -1.0f, -1.0f, 0.0f,     uvMin, uvMin,
-        -1.0f,  1.0f, 0.0f,     uvMin, uvMax
+         1.0f,  1.0f, -1.0f,     uvMax, uvMax,
+         1.0f, -1.0f, -1.0f,     uvMax, uvMin,
+        -1.0f, -1.0f, -1.0f,     uvMin, uvMin,
+        -1.0f,  1.0f, -1.0f,     uvMin, uvMax,
+         1.0f,  1.0f,  0.0f,      1.0f,  0.0f,
+         1.0f, -1.0f,  0.0f,      1.0f,  1.0f,
+        -1.0f, -1.0f,  0.0f,      0.0f,  1.0f,
+        -1.0f,  1.0f,  0.0f,      0.0f,  0.0f
+
     };
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -133,11 +151,20 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     // Copy indices into element buffer
     unsigned int indices[] = {
         0, 1, 3,
-        1, 2, 3
+        1, 2, 3,
+        4, 5, 7,
+        5, 6, 7
     };
+    pInd = indices;
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+
+    // Set blending properties for cursor
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ZERO);
+    glBlendEquation(GL_FUNC_ADD);
 
     // Set up textures for shader
     SetupTextures();
@@ -149,6 +176,7 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
 void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
 {
     // Clear background color
+    glBlendFunc(GL_ONE, GL_ZERO);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -170,9 +198,31 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+    // Render cursor
+    if(showCursor)
+        DrawCursor(window);
+
     // End of frame events
     // glfwSwapBuffers(window);
     glfwPollEvents();
+}
+
+// Draw cursor for source creation
+void DrawCursor(GLFWwindow* window)
+{
+        // Blend rectangle on top of textured rectangle
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+        // Activate shader and pass inmouse position
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        shaders[6].Use();
+        shaders[6].SetFloat("xPos", (float(xpos) / winWidth));
+        shaders[6].SetFloat("yPos", (float(ypos) / winWidth));
+
+        // Draw squares then reset shader
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void *) (6 * sizeof(unsigned int)));
+        currentShader -> Use();
 }
 
 // Set up textures in OpenGL

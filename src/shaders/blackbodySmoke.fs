@@ -28,7 +28,8 @@ void main()
     float blue = (41.0 + (251.0 - 41.0) * t) / 255.0;
 
     // Final color as alpha mix of blackbody and density
-    gl_FragColor = dens * bMod * vec4(sMod + red * intensity, sMod + green * intensity, sMod + blue * intensity, 1.0);
+    vec3 outColor = dens * bMod * vec3(sMod + red * intensity, sMod + green * intensity, sMod + blue * intensity);
+    gl_FragColor = vec4(outColor, 1.0);
 
 
 }

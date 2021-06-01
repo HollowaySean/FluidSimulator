@@ -18,7 +18,7 @@ void main()
     float dens = texture(densTex, TexCoord).x;
 
     // Blackbody intensity
-    float intensity = dens * bMod * sbConstant * temp * temp * temp * temp;
+    float intensity = sbConstant * temp * temp * temp * temp;
 
     // BLackbody color temperature
     float t = (temp - 1900.0) / (5400.0 - 1900.0);
@@ -27,7 +27,8 @@ void main()
     float blue = (41.0 + (251.0 - 41.0) * t) / 255.0;
 
     // Final color as alpha mix of blackbody and density
-    gl_FragColor = intensity * vec4(red, green, blue, 1.0);
+    vec3 outColor = dens * bMod * intensity * vec3(red, green, blue);
+    gl_FragColor = vec4(outColor, 1.0);
 
 
 }

@@ -37,6 +37,7 @@ struct ShaderVars {
 
 GLFWwindow* SimWindowSetup(int res, int windowWidth);
 void SetupTextures();
+void DrawCursor(GLFWwindow* window);
 void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth);
 
 /// Main loop render methods ///
@@ -58,6 +59,7 @@ void FramerateGUI(SimTimer* timer);
 void ErrorCallback(int error, const char* description);
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
 void ProcessInput(GLFWwindow* window);
+void SpaceCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 /// Closing methods ///
 

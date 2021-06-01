@@ -301,10 +301,10 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
 
     // Call GUI submethods
     ParameterGUI(state);
+    SourceGUI(window, state, source);
     ShaderGUI();
     ResetGUI(state, source);
     WindowGUI(state, source, props, timer);
-    SourceGUI(window, state, source);
     FramerateGUI(timer);
 
     // Render ImGui frame

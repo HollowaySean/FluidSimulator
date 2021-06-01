@@ -1,6 +1,8 @@
 #!/bin/bash
 
-ffmpeg -y -framerate 60 -i ./bmp/$1_%d.bmp ./mp4/$1.mp4
-ffmpeg -y -t 10.0 -i ./mp4/$1.mp4 -filter_complex "[0:v] palettegen" ./png/palette.png
-ffmpeg -y -t 10.0 -i ./mp4/$1.mp4 -i ./png/palette.png -filter_complex "[0:v][1:v] paletteuse" ./gif/$1.gif
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+ffmpeg -y -framerate 60 -i $SCRIPT_DIR/bmp/${1}_%d.bmp $SCRIPT_DIR/mp4/${1}.mp4
+ffmpeg -y -t 10.0 -i $SCRIPT_DIR/mp4/${1}.mp4 -filter_complex "[0:v] palettegen" $SCRIPT_DIR/png/palette.png
+ffmpeg -y -t 10.0 -i $SCRIPT_DIR/mp4/${1}.mp4 -i $SCRIPT_DIR/png/palette.png -filter_complex "[0:v][1:v] paletteuse" $SCRIPT_DIR/gif/${1}.gif
 

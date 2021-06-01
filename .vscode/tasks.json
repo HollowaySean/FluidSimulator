@@ -2,18 +2,18 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: g++ build active file",
+            "label": "GUI Build",
             "command": "/bin/g++",
             "args": [
                 "-g",
+                "src/main/mainGUI.cpp",
                 "src/*.cpp",
                 "lib/imgui/*.cpp",
                 "-o",
-                "bin/FluidSimulator",
+                "bin/FluidSimGUI",
                 "-lGL",
                 "-lGLEW",
                 "-lglfw",
-                "-lGLU",
                 "-I",
                 "lib"
             ],
@@ -23,11 +23,48 @@
             "problemMatcher": [
                 "$gcc"
             ],
+            "group": "build",
+            "detail": "compiler: /bin/g++"
+        },
+        {
+            "type": "cppbuild",
+            "label": "Record Build",
+            "command": "/bin/g++",
+            "args": [
+                "-g",
+                "src/main/mainRecord.cpp",
+                "src/*.cpp",
+                "lib/imgui/*.cpp",
+                "-o",
+                "bin/FluidSimRecord",
+                "-lGL",
+                "-lGLEW",
+                "-lglfw",
+                "-I",
+                "lib"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": "compiler: /bin/g++"
+        },
+        {
+            "label": "Build",
+            "dependsOn": [
+                "GUI Build",
+                "Record Build"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "compiler: /bin/g++"
+            "problemMatcher": [
+                "$gcc"
+            ]
         }
     ],
     "version": "2.0.0"

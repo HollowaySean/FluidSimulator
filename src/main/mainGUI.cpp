@@ -12,11 +12,11 @@
 using namespace ImGui;
 
 // Project header files
-#include "headers/SimSource.h"
-#include "headers/SimState.h"
-#include "headers/SimTimer.h"
-#include "headers/Window.h"
-#include "headers/StateLoader.h"
+#include "../headers/SimSource.h"
+#include "../headers/SimState.h"
+#include "../headers/SimTimer.h"
+#include "../headers/Window.h"
+#include "../headers/StateLoader.h"
 
 // Global variables
 std::string projectPath;

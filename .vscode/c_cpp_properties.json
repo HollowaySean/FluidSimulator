@@ -4,6 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/lib/**",
+                "${workspaceFolder}/src/headers/**",
                 "${workspaceFolder}/include/**",
                 "/usr/include/c++/9/**",
                 "/usr/include/**"

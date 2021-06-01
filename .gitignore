@@ -3,3 +3,6 @@ build
 
 # Ignore any binaries
 bin/*
+
+# Ignore contents of output folder
+output/*

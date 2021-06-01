@@ -1,0 +1,47 @@
+{
+    "params" :{
+        "lengthScale" : 0.5,
+        "timeScale" : 1.0,
+        "visc" : 0.000018,
+        "diff" : 0.000028,
+        "grav" : -9.8,
+        "airDensity" : 1.29235,
+        "massRatio" : 0.54,
+        "airTemp" : 300.0,
+        "diffTemp" : 0.0002338,
+        "densDecay" : 0.0,
+        "tempFactor" : 0.0,
+        "tempDecay" : 0.0,
+        "closedBoundaries" : false,
+        "advancedCoefficients" : true,
+        "gravityOn" : true,
+        "temperatureOn" : true,
+        "solverSteps" : 20
+    },
+    "sources" :[
+        {
+            "isDynamic" : true,
+            "type" : "gas",
+            "shape" : "circle",
+            "flowRate" : 50.0,
+            "sourceTemp" : 2500.0,
+            "xCenter" : 0.0,
+            "yCenter" : -0.5,
+            "radius" : 0.05,
+            "flowVar" : 1.0,
+            "tempVar" : 100.0
+        },
+        {
+            "isDynamic" : true,
+            "type" : "windBoundary",
+            "speed" : 0.0,
+            "speedVar" : 1.0
+        }
+    ],
+    "windowProps" :{
+        "resolution" : 200,
+        "winWidth" : 800,
+        "controlWidth" : 0,
+        "maxFrameRate" : 1000
+    }
+}

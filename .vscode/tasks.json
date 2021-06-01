@@ -35,6 +35,7 @@
                 "src/main/mainRecord.cpp",
                 "src/*.cpp",
                 "lib/imgui/*.cpp",
+                "lib/EasyBMP/EasyBMP.cpp",
                 "-o",
                 "bin/FluidSimRecord",
                 "-lGL",

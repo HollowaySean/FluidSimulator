@@ -52,7 +52,7 @@ class SimSource
         void CreateWindBoundaryDynamic(
                                 float speed, float speedVar);
 
-        void RemoveSourceAtPoint(float x, float y);
+        void RemoveSourceAtPoint(float x, float y, float dist);
         void RemoveAllSources();
 
         // Update sim object

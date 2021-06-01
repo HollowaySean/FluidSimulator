@@ -7,18 +7,19 @@
 // Handles for OpenGL buffers and shaders
 unsigned int VAO, VBO, EBO;
 unsigned int cursorVBO, cursorEBO;
-unsigned int * pInd;
 unsigned int densTex, tempTex;
 Shader* shaders;
 Shader* currentShader;
 static int shaderParam = 0;
 int numShaders = 7;
 std::string defaultJSON = "match";
-bool showCursor = false;
+ShaderVars shaderVars;
 
 // Window size properties
 int resolution;
 int winWidth;
+int wMargin = 0;
+int hMargin = 0;
 int texWidth;
 int texSize;
 int controlWidth;
@@ -26,7 +27,11 @@ float bottomPos;
 ImVec2 controlPos;
 ImVec2 controlSize;
 
-ShaderVars shaderVars;
+// Cursor properties 
+float cursorSize = 0.1;
+int cursorShape = 1;
+bool showCursor = false;
+
 
 // OpenGL Error Callback
 void ErrorCallback(int error, const char* description)
@@ -41,8 +46,10 @@ void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
     bottomPos = float(height);
 
     // Resize window with simulation centered in window
-    int size = std::min(width - controlWidth, height);
-    glViewport((width - controlWidth - size) / 2, (height - size) / 2, size, size);
+    winWidth = std::min(width - controlWidth, height);
+    wMargin = (width - controlWidth - winWidth) / 2;
+    hMargin = (height - winWidth) / 2;
+    glViewport(wMargin, hMargin, winWidth, winWidth);
 
     // Resize control panel
     controlPos = ImVec2(float(width - controlWidth), 0.0);
@@ -59,8 +66,23 @@ void ProcessInput(GLFWwindow* window)
 // OpenGL key press callback
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if(key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-        showCursor = !showCursor;
+    if(key == GLFW_KEY_LEFT_SHIFT && action == GLFW_PRESS){
+        cursorShape = (cursorShape + 1) % 3;
+    }
+}
+
+// OpenGL mouse button callback
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+        
+
+}
+
+// OpenGL scroll wheel callback
+void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
+{
+    // Adjust size of cursor
+    cursorSize = std::max(0.0f, cursorSize + float(yOffset) / 100);
 }
 
 // OpenGL environment and background setup for simulation display
@@ -102,8 +124,10 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
     FramebufferSizeCallback(window, windowWidth, windowWidth);
 
-    // Set input callback
+    // Set input callbacks
     glfwSetKeyCallback(window, KeyCallback);
+    glfwSetMouseButtonCallback(window, MouseButtonCallback);
+    glfwSetScrollCallback(window, ScrollCallback);
 
     // Set up shader
     shaders = new Shader[numShaders];
@@ -155,7 +179,6 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
         4, 5, 7,
         5, 6, 7
     };
-    pInd = indices;
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -198,31 +221,9 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    // Render cursor
-    if(showCursor)
-        DrawCursor(window);
-
     // End of frame events
     // glfwSwapBuffers(window);
     glfwPollEvents();
-}
-
-// Draw cursor for source creation
-void DrawCursor(GLFWwindow* window)
-{
-        // Blend rectangle on top of textured rectangle
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-        // Activate shader and pass inmouse position
-        double xpos, ypos;
-        glfwGetCursorPos(window, &xpos, &ypos);
-        shaders[6].Use();
-        shaders[6].SetFloat("xPos", (float(xpos) / winWidth));
-        shaders[6].SetFloat("yPos", (float(ypos) / winWidth));
-
-        // Draw squares then reset shader
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void *) (6 * sizeof(unsigned int)));
-        currentShader -> Use();
 }
 
 // Set up textures in OpenGL
@@ -281,6 +282,11 @@ void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth)
 // Processes to be called each frame for control window
 void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, SimTimer* timer, WindowProps* props)
 {
+
+    // Render cursor
+    if(showCursor)
+        DrawCursor(window);
+
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -298,7 +304,7 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     ShaderGUI();
     ResetGUI(state, source);
     WindowGUI(state, source, props, timer);
-    SourceGUI(state, source);
+    SourceGUI(window, state, source);
     FramerateGUI(timer);
 
     // Render ImGui frame
@@ -557,9 +563,196 @@ void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer*
 }
 
 // GUI for source control
-void SourceGUI(SimState* state, SimSource* source)
+void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
 {
+    // Source variables
+    static float flowRate = 10.0;
+    static float temperature = 300.0;
+    static float speed = 1.0;
+    static float angle = 0.0;
+    static float flux = 10.0;
+    static float fVar = 0.0;
+    static float tVar = 0.0;
+    static float wVar = 0.0;
+    static float aVar = 0.0;
+    static bool dynamic = false;
 
+    // GUI for creating source
+    static int sourceType = 0;
+    ImGui::Text("Create Source:");
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if(ImGui::IsItemHovered()){
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted("After selecting \"Place Source\", click to create source in simulation area.\nPress Shift to change shape and scroll the mouse wheel to change size.\nRight click a source to remove it.");
+        ImGui::EndTooltip(); }
+    ImGui::Combo("##sourcetype", &sourceType, "Fluid\0Local Wind\0Global Wind\0Heat\0Energy\0");
+    ImGui::Checkbox("Fluxuating?", &dynamic);
+
+    switch(sourceType){
+        case 0:
+            ImGui::Text("Flow Rate:");
+            ImGui::InputFloat("##flowrate", &flowRate, 0.1, 1.0);
+            ImGui::Text("Temperature:");
+            ImGui::InputFloat("##temp", &temperature, 1.0, 10.0);
+            if(dynamic){
+                ImGui::Text("Flow Rate Variance:");
+                ImGui::InputFloat("##flowVar", &fVar, 0.1, 1.0);
+                ImGui::Text("Temperature Variance:");
+                ImGui::InputFloat("##tempVar", &tVar, 1.0, 10.0);
+            }
+            if(ImGui::Button("Place Source")){
+                showCursor = true;
+                cursorSize = 0.1;
+            }
+            break;
+        case 1:
+            cursorSize = 0.025;
+            ImGui::Text("Wind Speed:");
+            ImGui::InputFloat("##speed", &speed, 0.1, 1.0);
+            ImGui::Text("Angle:");
+            ImGui::InputFloat("##angle", &angle, 1.0, 10.0);
+            if(dynamic){
+                ImGui::Text("Speed Variance:");
+                ImGui::InputFloat("##windVar", &wVar, 0.1, 1.0);
+                ImGui::Text("Angle Variance:");
+                ImGui::InputFloat("##angVar", &aVar, 1.0, 10.0);
+            }
+            if(ImGui::Button("Place Source")){
+                showCursor = true;
+            }
+            break;
+        case 2:
+            ImGui::Text("Wind Speed:");
+            ImGui::InputFloat("##speed", &speed, 0.1, 1.0);
+            if(dynamic){
+                ImGui::Text("Speed Variance:");
+                ImGui::InputFloat("##windVar", &wVar, 0.1, 1.0);
+            }
+            if(ImGui::Button("Set Wind")){
+                if(dynamic){
+                    source->CreateWindBoundaryDynamic(speed, wVar);
+                }else{
+                    source->CreateWindBoundary(speed);
+                }
+            }
+            break;
+        case 3:
+            ImGui::Text("Temperature:");
+            ImGui::InputFloat("##temp", &temperature, 1.0, 10.0);
+            if(dynamic){
+                ImGui::Text("Temperature Variance:");
+                ImGui::InputFloat("##tempVar", &tVar, 1.0, 10.0);
+            }
+            if(ImGui::Button("Place Source")){
+                showCursor = true;
+                cursorSize = 0.1;
+            }
+            break;
+        case 4:
+            ImGui::Text("Energy Flux:");
+            ImGui::InputFloat("##flux", &flux, 0.1, 1.0);
+            if(dynamic){
+                ImGui::Text("Temperature Variance:");
+                ImGui::InputFloat("##tempVar", &tVar, 1.0, 10.0);
+            }
+            if(ImGui::Button("Place Source")){
+                showCursor = true;
+                cursorSize = 0.1;
+            }
+            break;
+
+    }
+
+    // Create new source when mouse is clicked
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) && showCursor){
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        float xposScreen = (2 * (float(xpos) - wMargin) / winWidth) - 1.0;
+        float yposScreen = -1 * ((2 * (float(ypos) - hMargin) / winWidth) - 1.0);
+
+        if((abs(xposScreen) < 1.0) && (abs(yposScreen) < 1.0)){
+            if(dynamic){
+                switch(sourceType){
+                    case 0:
+                        source->CreateGasSourceDynamic(static_cast<SimSource::Shape>(cursorShape), 
+                                        flowRate, temperature, xposScreen, yposScreen, cursorSize,
+                                        fVar, tVar);
+                        break;
+                    case 1:
+                        source->CreateWindSourceDynamic(angle, speed, xposScreen, yposScreen,
+                                        wVar, aVar);
+                        break;
+                    case 3:
+                        source->CreateHeatSourceDynamic(static_cast<SimSource::Shape>(cursorShape),
+                                        temperature, xposScreen, yposScreen, cursorSize,
+                                        tVar);
+                        break;
+                    case 4:
+                        source->CreateEnergySourceDynamic(static_cast<SimSource::Shape>(cursorShape),
+                                        flux, state->params.airTemp, state->params.airDens, 
+                                        xposScreen, yposScreen, cursorSize,
+                                        tVar);
+                        break;
+                }
+            }else{
+                switch(sourceType){
+                    case 0:
+                        source->CreateGasSource(static_cast<SimSource::Shape>(cursorShape), 
+                                        flowRate, temperature, xposScreen, yposScreen, cursorSize);
+                        break;
+                    case 1:
+                        source->CreateWindSource(angle, speed, xposScreen, yposScreen);
+                        break;
+                    case 3:
+                        source->CreateHeatSource(static_cast<SimSource::Shape>(cursorShape),
+                                        temperature, xposScreen, yposScreen, cursorSize);
+                        break;
+                    case 4:
+                        source->CreateEnergySource(static_cast<SimSource::Shape>(cursorShape),
+                                        flux, state->params.airTemp, state->params.airDens, 
+                                        xposScreen, yposScreen, cursorSize);
+                        break;
+                }
+            }
+            source->UpdateSources();
+            showCursor = false;
+        }
+    }
+
+    // Remove source when right clicked
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)){
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        float xposScreen = (2 * (float(xpos) - wMargin) / winWidth) - 1.0;
+        float yposScreen = -1 * ((2 * (float(ypos) - hMargin) / winWidth) - 1.0);
+
+        source->RemoveSourceAtPoint(xposScreen, yposScreen, 0.05);
+    }
+
+    ImGui::Text("");
+    ImGui::Separator();
+
+}
+
+// Draw cursor for source creation
+void DrawCursor(GLFWwindow* window)
+{
+        // Blend rectangle on top of textured rectangle
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+        // Activate shader and pass inmouse position
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        shaders[6].Use();
+        shaders[6].SetInt("shape", cursorShape);
+        shaders[6].SetFloat("size", cursorSize);
+        shaders[6].SetFloat("xPos", (float(xpos) - wMargin) / winWidth);
+        shaders[6].SetFloat("yPos", (float(ypos) - hMargin) / winWidth);
+
+        // Draw squares then reset shader
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void *) (6 * sizeof(unsigned int)));
+        currentShader -> Use();
 }
 
 // GUI for framerate functions

@@ -51,7 +51,7 @@ void ParameterGUI(SimState* state);
 void ShaderGUI();
 void ResetGUI(SimState* state, SimSource* source);
 void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer* timer);
-void SourceGUI(SimState* state, SimSource* source);
+void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source);
 void FramerateGUI(SimTimer* timer);
 
 /// Callbacks ///
@@ -59,7 +59,9 @@ void FramerateGUI(SimTimer* timer);
 void ErrorCallback(int error, const char* description);
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
 void ProcessInput(GLFWwindow* window);
-void SpaceCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
 /// Closing methods ///
 

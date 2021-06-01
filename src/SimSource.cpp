@@ -172,6 +172,8 @@ SimSource::GasSource::GasSource(int N, float lengthScale, Shape shape, float flo
     // Set source indices
     this -> xCenter = xCenter;
     this -> yCenter = yCenter;
+    this -> radius = radius;
+    this -> shape = shape;
     SetIndices(N, shape, xCenter, yCenter, radius);
 
     // Calculate sources
@@ -216,6 +218,8 @@ SimSource::WindSource::WindSource(int N, float lengthScale, float angle, float s
     // Set source indices
     this -> xCenter = xCenter;
     this -> yCenter = yCenter;
+    this -> radius = 0.0;
+    this -> shape = point;
     SetIndices(N, point, xCenter, yCenter, 0.0);
 }
 
@@ -250,6 +254,8 @@ SimSource::HeatSource::HeatSource(int N, float lengthScale, Shape shape, float s
     // Set source indices
     this -> xCenter = xCenter;
     this -> yCenter = yCenter;
+    this -> radius = radius;
+    this -> shape = shape;
     SetIndices(N, shape, xCenter, yCenter, radius);
 }
 
@@ -277,6 +283,8 @@ SimSource::EnergySource::EnergySource(int N, float lengthScale, Shape shape, flo
     // Set source indices
     this -> xCenter = xCenter;
     this -> yCenter = yCenter;
+    this -> radius = radius;
+    this -> shape = shape;
     SetIndices(N, shape, xCenter, yCenter, radius);
 
     // Calculate sources
@@ -291,6 +299,14 @@ SimSource::EnergySource::EnergySource(int N, float lengthScale, Shape shape, flo
 // Create wind across left and right boundaries
 void SimSource::CreateWindBoundary(float speed)
 {
+    // Remove any other wind boundaries
+    for(Source* source : sources){
+        if(source -> type == windBoundary){
+            RemoveSource(source);
+            return;
+        }
+    }
+
     WindBoundary* newWindBoundary = new WindBoundary(simState->GetN(), speed);
     Source* newSource = newWindBoundary;
     sources.push_back(newSource);
@@ -299,6 +315,14 @@ void SimSource::CreateWindBoundary(float speed)
 // Create wind across left and right boundaries
 void SimSource::CreateWindBoundaryDynamic(float speed, float speedVar)
 {
+    // Remove any other wind boundaries
+    for(Source* source : sources){
+        if(source -> type == windBoundary){
+            RemoveSource(source);
+            return;
+        }
+    }
+
     WindBoundary* newWindBoundary = new WindBoundary(simState->GetN(), speed);
     newWindBoundary -> isDynamic = true;
     newWindBoundary -> wVar = speedVar;
@@ -332,15 +356,16 @@ SimSource::WindBoundary::WindBoundary(int N, float speed)
 void SimSource::RemoveSource(Source* sourceToRemove)
 {
     // Remove from source list
-    this->sources.remove(sourceToRemove);
-    delete sourceToRemove;
+        sources.remove(sourceToRemove);
+        delete sourceToRemove;
 
     // Propogate change to simulation
-    this->UpdateSources();
+    simState->ResetSources();
+    UpdateSources();
 }
 
 // Find source that overlaps with point and remove it
-void SimSource::RemoveSourceAtPoint(float x, float y)
+void SimSource::RemoveSourceAtPoint(float x, float y, float dist)
 {
     // Loop through sources
     for(Source* source : sources){
@@ -350,32 +375,39 @@ void SimSource::RemoveSourceAtPoint(float x, float y)
             continue;
         }else{
 
+            float rad = source->radius + dist;
             float xDist = abs(x - source->xCenter);
             float yDist = abs(y - source->yCenter);
 
             switch(source->shape){
                 case circle:
-                    if(xDist * xDist + yDist * yDist < source->radius * source->radius){
+                    if(xDist * xDist + yDist * yDist < rad * rad){
                         RemoveSource(source);
                         return;
                     }
                     break;
-                case square:
 
-                    if((xDist < source->radius) 
-                    && (yDist < source->radius)){
+                case square:
+                    if((xDist < rad) 
+                    && (yDist < rad)){
                         RemoveSource(source);
                         return;
                     }
                     break;
 
                 case diamond:
-
-                    if(xDist + yDist < source->radius){
+                    if(xDist + yDist < rad){
                         RemoveSource(source);
                         return;
                     }
                     break;
+
+                case point:
+                    if(xDist * xDist + yDist * yDist < rad * rad){
+                        RemoveSource(source);
+                        return;
+                    }
+
             }
         }
     }

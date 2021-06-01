@@ -32,7 +32,7 @@ int main(int argc, char** argv){
     int winWidth = 800;
     float fps = 60.0;
     float timeStep = 1.0 / fps;
-    int numFrames = 1200;
+    int numFrames = 600;
     std::string filename = "test";
 
     // Get project path
@@ -56,8 +56,8 @@ int main(int argc, char** argv){
     // Create array for image data
     BMP output;
     output.SetSize(winWidth, winWidth);
-    output.SetBitDepth(8);
-    unsigned char* imageData = (unsigned char *)malloc((int)(winWidth*winWidth*3));
+    output.SetBitDepth(24);
+    unsigned char* imageData = (unsigned char *)malloc(sizeof(unsigned char) * (winWidth*winWidth*3));
 
     // Simulation loop
     while(!glfwWindowShouldClose(window))
@@ -85,6 +85,7 @@ int main(int argc, char** argv){
                 pixelColor.Red      = imageData[ind];
                 pixelColor.Green    = imageData[ind+1];
                 pixelColor.Blue     = imageData[ind+2];
+                
 
                 *output(j, winWidth - (i + 1)) = pixelColor;
             }
@@ -94,6 +95,10 @@ int main(int argc, char** argv){
 
         // Read out frame rate per every 
         timer.DisplayFrameRate(int(fps));
+
+        if(timer.CurrentFrame() % int(fps) == 0){
+            std::cout << timer.CurrentFrame() << " frames complete out of " << numFrames << std::endl;
+        }
 
         // Escape once complete
         if(timer.CurrentFrame() >= numFrames){

@@ -23,7 +23,7 @@
             "isDynamic" : true,
             "type" : "gas",
             "shape" : "circle",
-            "flowRate" : 50.0,
+            "flowRate" : 100.0,
             "sourceTemp" : 2500.0,
             "xCenter" : 0.0,
             "yCenter" : -0.5,

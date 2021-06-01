@@ -1,0 +1,6 @@
+#!/bin/bash
+
+ffmpeg -y -framerate 60 -i ./bmp/$1_%d.bmp ./mp4/$1.mp4
+ffmpeg -y -t 10.0 -i ./mp4/$1.mp4 -filter_complex "[0:v] palettegen" ./png/palette.png
+ffmpeg -y -t 10.0 -i ./mp4/$1.mp4 -i ./png/palette.png -filter_complex "[0:v][1:v] paletteuse" ./gif/$1.gif
+

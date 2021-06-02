@@ -22,11 +22,11 @@ Dependencies:
 - GLEW
 Build steps:
 
-> git clone https://github.com/HollowaySean/FluidSimulator.git
-> cd FluidSimulator
-> mkdir build
-> cd build
-> cmake ..
+> git clone https://github.com/HollowaySean/FluidSimulator.git<br>
+> cd FluidSimulator<br>
+> mkdir build<br>
+> cd build<br>
+> cmake ..<br>
 > make
 
 ### Export Build:
@@ -35,9 +35,9 @@ Dependencies:
 - GLEW
 - FFMPEG
 Build steps:
-> git clone https://github.com/HollowaySean/FluidSimulator.git
-> cd FluidSimulator
-> mkdir build
-> cd build
-> cmake .. -DCMAKE_BUILD_TYPE="Record"
+> git clone https://github.com/HollowaySean/FluidSimulator.git<br>
+> cd FluidSimulator<br>
+> mkdir build<br>
+> cd build<br>
+> cmake .. -DCMAKE_BUILD_TYPE="Record"<br>
 > make

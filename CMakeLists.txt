@@ -24,6 +24,10 @@ target_link_libraries(FluidSimGUI glfw)
 target_link_libraries(FluidSimGUI GLEW)
 
 # Build recording configuration
+if(NOT ${CMAKE_BUILD_TYPE})
+    set(CMAKE_BUILD_TYPE "Regular")
+endif()
+
 if(${CMAKE_BUILD_TYPE} STREQUAL "Record")
     file(GLOB sourceRecord
         "./src/*.cpp"

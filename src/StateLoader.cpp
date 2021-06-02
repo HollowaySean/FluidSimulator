@@ -208,6 +208,34 @@ void LoadWindow(const char* jsonFilename, WindowProps* props)
 
 }
 
+// Load window settings
+void LoadRecord(nlohmann::json json, WindowProps* props)
+{
+    props->resolution   = json["recordProps"]["resolution"];
+    props->winWidth     = json["recordProps"]["winWidth"];
+    props->fps          = json["recordProps"]["fps"];
+    props->numFrames    = json["recordProps"]["numFrames"];
+}
+
+// Load window directly
+void LoadRecord(const char* jsonFilename, WindowProps* props)
+{
+
+    // Append JSON filename to correct path
+    std::string jsonPath = projectPath + "/src/json/" + jsonFilename + ".json";
+
+    // Open file
+    std::ifstream ifs(jsonPath);
+    json j = json::parse(ifs);
+    
+    // Load properties into object
+    LoadRecord(j, props);
+
+    //  Close filestream
+    ifs.close();
+
+}
+
 // Convert string to enum for shape
 SimSource::Shape StringToShape(std::string shapeName)
 {

@@ -22,12 +22,12 @@
         {
             "isDynamic" : false,
             "type" : "gas",
-            "shape" : "point",
-            "flowRate" : 50.0,
+            "shape" : "circle",
+            "flowRate" : 100.0,
             "sourceTemp" : 300.0,
             "xCenter" : 0.0,
             "yCenter" : 0.0,
-            "radius" : 0.1,
+            "radius" : 0.01,
             "flowVar" : 0.01,
             "tempVar" : 0.0
         },
@@ -35,8 +35,8 @@
             "isDynamic" : true,
             "type" : "wind",
             "xCenter" : 0.0,
-            "yCenter" : 0.0,
-            "speed" : 50.0,
+            "yCenter" : 0.05,
+            "speed" : 100.0,
             "angle" : -90.0,
             "speedVar" : 1.0,
             "angleVar" : 20.0

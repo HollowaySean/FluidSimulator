@@ -27,30 +27,26 @@ std::string projectPath;
 
 int main(int argc, char** argv){
 
-    // Recording properties
-    int resolution = 200;
-    int winWidth = 800;
-    float fps = 60.0;
-    float timeStep = 1.0 / fps;
-    int numFrames = 600;
-    std::string filename = "test";
+    // Use first argument as filename
+    std::string filename = argv[1];
 
     // Get project path
     std::string fullpath = argv[0];
     projectPath = fullpath.substr(0, fullpath.find_last_of("/")) + "/..";
 
     // Initialize state objects
-    // WindowProps props;
-    // LoadWindow("record", &props);
-    SimState state(resolution);
+    WindowProps props;
+    LoadRecord("record", &props);
+    int winWidth = props.winWidth;
+    SimState state(props.resolution);
     SimSource sources(&state);
     LoadState("record", &state, &sources);
 
     // Set up simulation and control windows
-    GLFWwindow* window = SimWindowSetup(resolution, winWidth);
+    GLFWwindow* window = SimWindowSetup(props.resolution, props.winWidth);
 
     // Initialize timers
-    SimTimer timer(fps);
+    SimTimer timer(props.fps);
     timer.StartSimulation();
 
     // Create array for image data
@@ -73,7 +69,7 @@ int main(int argc, char** argv){
         sources.UpdateSourcesDynamic();
 
         // Update simulation state
-        state.SimulationStep(timeStep);
+        state.SimulationStep(1.0 / float(props.fps));
 
         // Save openGl data to images
         glReadPixels(0, 0, winWidth, winWidth, GL_RGB, GL_UNSIGNED_BYTE, imageData);
@@ -94,14 +90,14 @@ int main(int argc, char** argv){
         output.WriteToFile(const_cast<char *>(savePath.c_str()));
 
         // Read out frame rate per every 
-        timer.DisplayFrameRate(int(fps));
+        timer.DisplayFrameRate(int(props.fps));
 
-        if(timer.CurrentFrame() % int(fps) == 0){
-            std::cout << timer.CurrentFrame() << " frames complete out of " << numFrames << std::endl;
+        if(timer.CurrentFrame() % int(props.fps) == 0){
+            std::cout << timer.CurrentFrame() << " frames complete out of " << props.numFrames << std::endl;
         }
 
         // Escape once complete
-        if(timer.CurrentFrame() >= numFrames){
+        if(timer.CurrentFrame() >= props.numFrames){
             break;
         }
     }

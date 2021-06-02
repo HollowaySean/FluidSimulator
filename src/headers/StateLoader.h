@@ -40,6 +40,12 @@ void LoadWindow(nlohmann::json json, WindowProps* props);
 // Load window from filename
 void LoadWindow(const char* jsonFilename, WindowProps* props);
 
+// Load window
+void LoadRecord(nlohmann::json json, WindowProps* props);
+
+// Load window from filename
+void LoadRecord(const char* jsonFilename, WindowProps* props);
+
 // Convert string to enum for shape
 SimSource::Shape StringToShape(std::string shapeName);
 

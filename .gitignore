@@ -4,5 +4,5 @@ build
 # Ignore any binaries
 bin/*
 
-# Ignore contents of output folder
+# Ignore contents of output folder subfolders
 output/*/*

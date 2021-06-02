@@ -4,15 +4,15 @@
         "timeScale" : 1.0,
         "visc" : 0.000018,
         "diff" : 0.000028,
-        "grav" : -9.8,
+        "grav" : 0.0,
         "airDensity" : 1.29235,
-        "massRatio" : 0.54,
+        "massRatio" : 1.0,
         "airTemp" : 300.0,
         "diffTemp" : 0.0002338,
         "densDecay" : 0.0,
         "tempFactor" : 0.0,
         "tempDecay" : 0.0,
-        "closedBoundaries" : false,
+        "closedBoundaries" : true,
         "advancedCoefficients" : true,
         "gravityOn" : true,
         "temperatureOn" : true,
@@ -20,28 +20,32 @@
     },
     "sources" :[
         {
-            "isDynamic" : true,
+            "isDynamic" : false,
             "type" : "gas",
-            "shape" : "circle",
-            "flowRate" : 100.0,
-            "sourceTemp" : 2500.0,
+            "shape" : "point",
+            "flowRate" : 50.0,
+            "sourceTemp" : 300.0,
             "xCenter" : 0.0,
-            "yCenter" : -0.5,
-            "radius" : 0.05,
-            "flowVar" : 1.0,
-            "tempVar" : 100.0
+            "yCenter" : 0.0,
+            "radius" : 0.1,
+            "flowVar" : 0.01,
+            "tempVar" : 0.0
         },
         {
             "isDynamic" : true,
-            "type" : "windBoundary",
-            "speed" : 0.0,
-            "speedVar" : 1.0
+            "type" : "wind",
+            "xCenter" : 0.0,
+            "yCenter" : 0.0,
+            "speed" : 50.0,
+            "angle" : -90.0,
+            "speedVar" : 1.0,
+            "angleVar" : 20.0
         }
     ],
-    "windowProps" :{
+    "recordProps" :{
         "resolution" : 200,
         "winWidth" : 800,
-        "controlWidth" : 0,
-        "maxFrameRate" : 1000
+        "fps" : 60,
+        "numFrames" : 600
     }
 }

@@ -23,6 +23,8 @@ struct WindowProps
     int winWidth;
     int controlWidth;
     int maxFrameRate;
+    float fps;
+    int numFrames;
 };
 
 // Struct to carry shader variables

@@ -3,7 +3,6 @@
 #include <cmath>
 #include <string>
 #include <GL/glew.h>
-#include <GL/freeglut.h>
 #include <nlohmann/json.hpp>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>

@@ -17,11 +17,12 @@ The simulator was built in Ubuntu 20.04 LTS, and currently is only set up to bui
 TODO: EXACT BUILD STEPS
 
 ### Standard Build:
+
 Dependencies:
 - GLFW
 - GLEW
-Build steps:
 
+Build steps:
 > git clone https://github.com/HollowaySean/FluidSimulator.git<br>
 > cd FluidSimulator<br>
 > mkdir build<br>
@@ -30,10 +31,12 @@ Build steps:
 > make
 
 ### Export Build:
+
 Dependencies:
 - GLFW
 - GLEW
 - FFMPEG
+
 Build steps:
 > git clone https://github.com/HollowaySean/FluidSimulator.git<br>
 > cd FluidSimulator<br>

@@ -39,6 +39,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Record")
     target_link_libraries(FluidSimRecord OpenGL::GL)
     target_link_libraries(FluidSimRecord glfw)
     target_link_libraries(FluidSimRecord GLEW)
+    file(MAKE_DIRECTORY "./output/bmp")
+    file(MAKE_DIRECTORY "./output/png")
+    file(MAKE_DIRECTORY "./output/gif")
+    file(MAKE_DIRECTORY "./output/mp4")
 endif()
 
 # CPack options

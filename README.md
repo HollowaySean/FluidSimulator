@@ -22,6 +22,10 @@ Dependencies:
 - GLFW
 - GLEW
 
+The following commands can be used to install all dependencies:
+> sudo apt update && sudo apt upgrade -y <br>
+> sudo apt install build-essential cmake git libglfw3-dev libglew-dev -y
+
 Build steps:
 > git clone https://github.com/HollowaySean/FluidSimulator.git<br>
 > cd FluidSimulator<br>
@@ -36,6 +40,10 @@ Dependencies:
 - GLFW
 - GLEW
 - FFMPEG
+
+The following commands can be used to install all dependencies:
+> sudo apt update && sudo apt upgrade -y <br>
+> sudo apt install build-essential cmake git libglfw3-dev libglew-dev ffmpeg -y
 
 Build steps:
 > git clone https://github.com/HollowaySean/FluidSimulator.git<br>

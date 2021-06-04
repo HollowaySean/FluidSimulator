@@ -1,6 +1,8 @@
 # Fluid Simulator
 Fluid Simulation in C++ and OpenGL by Sean Holloway
 
+For more information, see the full write-up [here.](https://blog.seanholloway.com/2021/06/03/fluid-dynamics-simulation-in-c-with-opengl/)
+
 ## Overview
 This project is a two-dimensional fluid dynamics simulator capable of modeling the dynamics of two mixed fluids, including convection and advection via the Navier-Stokes equations, molecular diffusion via Fick's law, thermal diffusion via Fourier's law, and both density-based and thermal buoyancy. 
 The original method was based on the paper "Real-Time Fluid Dynamics for Games" (Stam, 2003), with modifications for thermal and buoyancy dynamics.
@@ -10,11 +12,8 @@ External libraries used:
 - Paul Macklin's "EasyBMP" (Video export build only)
 The simulation outputs to an OpenGL-based GUI, allowing for real-time control of sources and physical parameters.
 
-TODO: LINK TO WRITEUP
-
 ## Building
 The simulator was built in Ubuntu 20.04 LTS, and currently is only set up to build for linux.
-TODO: EXACT BUILD STEPS
 
 ### Standard Build:
 

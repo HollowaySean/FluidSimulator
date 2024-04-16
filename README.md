@@ -1,7 +1,7 @@
 # Fluid Simulator
 Fluid Simulation in C++ and OpenGL by Sean Holloway
 
-For more information, see the full write-up [here.](https://blog.seanholloway.com/2021/06/03/fluid-dynamics-simulation-in-c-with-opengl/)
+For more information, see the full write-up [here.](https://blog.seanholloway.com/2021/09/09/fluid-dynamics-simulation-in-c-and-opengl/)
 
 ### Preface - April '24
 

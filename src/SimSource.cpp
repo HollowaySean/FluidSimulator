@@ -371,7 +371,7 @@ void SimSource::RemoveSourceAtPoint(float x, float y, float dist)
     for(Source* source : sources){
 
         // Check if point is inside source
-        if(typeid(source).name() == "WindBoundary"){
+        if(source->type == windBoundary){
             continue;
         }else{
 
